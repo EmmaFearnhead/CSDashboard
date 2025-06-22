@@ -647,7 +647,7 @@ function App() {
               {filteredTranslocations.length > 0 ? (
                 <MapComponent translocations={translocations} filteredTranslocations={filteredTranslocations} />
               ) : (
-                <div className="w-full h-96 bg-nature-light rounded-lg flex items-center justify-center border-2 border-sage-green">
+                <div className="w-full h-[32rem] bg-nature-light rounded-lg flex items-center justify-center border-2 border-sage-green">
                   <div className="text-center">
                     <div className="text-nature-brown text-lg font-medium mb-2">No translocations to display</div>
                     <div className="text-nature-brown text-sm mb-4">Load historical data to see conservation efforts across Africa</div>
