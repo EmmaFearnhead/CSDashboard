@@ -1019,7 +1019,6 @@ function App() {
             {/* Legend */}
             <div className="bg-white p-6 rounded-lg nature-shadow-lg border-l-4 border-sage-green">
               <h3 className="text-xl font-bold mb-4 text-forest-dark flex items-center">
-                <span className="text-2xl mr-2">🗺️</span>
                 Map Legend
               </h3>
               <div className="space-y-3 text-sm">
@@ -1036,7 +1035,7 @@ function App() {
                   <span className="text-forest-dark">Translocation Route</span>
                 </div>
                 <div className="mt-4 text-xs text-nature-brown bg-nature-light p-2 rounded">
-                  💡 Click map markers for detailed information about each translocation
+                  Click map markers for detailed information about each translocation
                 </div>
               </div>
             </div>
