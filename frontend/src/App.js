@@ -803,7 +803,7 @@ function App() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-forest-dark mb-2">Wildlife Conservation Dashboard</h1>
+          <h1 className="text-4xl font-bold text-forest-dark mb-2">Conservation Solutions Translocation Dashboard</h1>
           <p className="text-xl text-nature-brown">Tracking Wildlife Translocations Across Africa</p>
         </div>
 
