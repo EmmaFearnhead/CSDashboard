@@ -599,7 +599,7 @@ async def import_excel_file(file: UploadFile = File(...)):
             "successful_imports": len(created_translocations),
             "species_summary": {
                 species: len([t for t in created_translocations if t.species == species])
-                for species in ["Elephant", "Black Rhino", "White Rhino", "Plains Game Species", "Other"]
+                for species in set([t.species for t in created_translocations])
             }
         }
         
