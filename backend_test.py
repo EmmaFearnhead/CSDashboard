@@ -243,7 +243,7 @@ def test_create_update_delete_translocation():
         new_translocation = {
             "project_title": "Test Lion Translocation",
             "year": 2024,
-            "species": "Lion",
+            "species": "Other",  # Using "Other" for Lion in the new categorization
             "number_of_animals": 12,
             "source_area": {
                 "name": "Serengeti National Park",
@@ -257,7 +257,7 @@ def test_create_update_delete_translocation():
             },
             "transport": "Road",
             "special_project": "African Parks",
-            "additional_info": "Lion pride relocation for territorial management"
+            "additional_info": "Primary species: Lion - Pride relocation for territorial management"
         }
         
         print("Creating new translocation...")
@@ -293,7 +293,7 @@ def test_create_update_delete_translocation():
         translocation_id = created_translocation["id"]
         updated_data = new_translocation.copy()
         updated_data["number_of_animals"] = 15
-        updated_data["additional_info"] = "Updated: Lion pride relocation with additional animals"
+        updated_data["additional_info"] = "Primary species: Lion - Updated: Pride relocation with additional animals"
         
         print(f"Updating translocation with ID: {translocation_id}...")
         response = requests.put(
