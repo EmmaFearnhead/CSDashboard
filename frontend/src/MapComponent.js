@@ -421,7 +421,7 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
         mapRef.current.setView([-15, 25], 4);
       }
     }
-  }, [filteredTranslocations]);
+  }, [filteredTranslocations, mapRef.current]);
 
   return <div id="map" className="w-full h-[32rem] rounded-lg shadow-lg"></div>;
 };
