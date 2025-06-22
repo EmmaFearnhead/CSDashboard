@@ -330,7 +330,23 @@ async def import_excel_file(file: UploadFile = File(...)):
                 if pd.isna(year_val):
                     year = 2024
                 else:
-                    year = int(float(str(year_val)))
+                    year_str = str(year_val)
+                    # Handle complex year formats like "2023 & 2023", "2022-2023", etc.
+                    if '&' in year_str:
+                        # Take the first year from "2023 & 2023"
+                        year = int(year_str.split('&')[0].strip())
+                    elif '-' in year_str and len(year_str.split('-')) == 2:
+                        # Take the first year from "2022-2023"
+                        year = int(year_str.split('-')[0].strip())
+                    elif '/' in year_str:
+                        # Take the first year from "2022/2023"
+                        year = int(year_str.split('/')[0].strip())
+                    else:
+                        # Try normal conversion
+                        try:
+                            year = int(float(year_str))
+                        except:
+                            year = 2024  # Default fallback
                 print(f"Year: {year}")
                 
                 # Handle number of animals
