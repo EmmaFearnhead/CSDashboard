@@ -762,6 +762,13 @@ const FileUploadComponent = ({ onFileUpload, loading, onCancel }) => {
     selectedFile.name.endsWith('.csv')
   );
 
+  // Debug logging
+  console.log('FileUpload Debug:', {
+    selectedFile: selectedFile ? selectedFile.name : 'None',
+    isValidFile,
+    loading
+  });
+
   return (
     <div className="bg-white p-8 rounded-lg shadow-xl border-l-4 border-nature-green">
       <div className="text-center mb-6">
