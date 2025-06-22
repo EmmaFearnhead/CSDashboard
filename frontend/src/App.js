@@ -545,13 +545,13 @@ function App() {
         </div>
 
         {/* Controls */}
-        <div className="bg-white p-6 rounded-lg shadow-lg mb-6">
+        <div className="bg-white p-6 rounded-lg shadow-lg mb-6 border-l-4 border-forest-green">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
             <div className="flex flex-wrap gap-4">
               <select
                 value={filters.species}
                 onChange={(e) => setFilters({...filters, species: e.target.value})}
-                className="border rounded-md px-3 py-2"
+                className="border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
               >
                 <option value="">All Species</option>
                 <option value="elephant">🐘 Elephant</option>
@@ -567,7 +567,7 @@ function App() {
               <select
                 value={filters.year}
                 onChange={(e) => setFilters({...filters, year: e.target.value})}
-                className="border rounded-md px-3 py-2"
+                className="border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
               >
                 <option value="">All Years</option>
                 {[...new Set(translocations.map(t => t.year))].sort().map(year => (
@@ -578,7 +578,7 @@ function App() {
               <select
                 value={filters.transport_mode}
                 onChange={(e) => setFilters({...filters, transport_mode: e.target.value})}
-                className="border rounded-md px-3 py-2"
+                className="border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
               >
                 <option value="">All Transport</option>
                 <option value="road">🚛 Road</option>
@@ -587,7 +587,7 @@ function App() {
 
               <button
                 onClick={() => setFilters({species: '', year: '', transport_mode: ''})}
-                className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600"
+                className="bg-nature-brown text-white px-4 py-2 rounded-md hover:bg-earth-brown transition-colors shadow-md"
               >
                 Clear Filters
               </button>
@@ -597,21 +597,21 @@ function App() {
               {translocations.length === 0 && (
                 <button
                   onClick={createSampleData}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                  className="bg-forest-green text-white px-4 py-2 rounded-md hover:bg-forest-dark transition-colors shadow-md"
                 >
                   Load Sample Data
                 </button>
               )}
               <button
                 onClick={() => setShowForm(!showForm)}
-                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+                className="bg-nature-green text-white px-4 py-2 rounded-md hover:bg-forest-green transition-colors shadow-md"
               >
-                {showForm ? 'Hide Form' : 'Add Translocation'}
+                {showForm ? 'Hide Form' : '🌿 Add Translocation'}
               </button>
             </div>
           </div>
 
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-nature-brown">
             Showing {filteredTranslocations.length} of {translocations.length} translocations
           </div>
         </div>
