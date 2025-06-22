@@ -649,9 +649,12 @@ function App() {
   const [filters, setFilters] = useState({
     species: '',
     year: '',
-    transport_mode: ''
+    transport: '',
+    special_project: ''
   });
   const [showForm, setShowForm] = useState(false);
+  const [showDataTable, setShowDataTable] = useState(false);
+  const [editingTranslocation, setEditingTranslocation] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchTranslocations = async () => {
@@ -673,26 +676,54 @@ function App() {
     }
   };
 
-  const createSampleData = async () => {
+  const importHistoricalData = async () => {
     try {
-      await axios.post(`${API}/translocations/sample-data`);
+      await axios.post(`${API}/translocations/import-historical`);
       fetchTranslocations();
       fetchStats();
     } catch (error) {
-      console.error('Error creating sample data:', error);
+      console.error('Error importing historical data:', error);
     }
   };
 
   const addTranslocation = async (translocationData) => {
     try {
-      await axios.post(`${API}/translocations`, translocationData);
+      if (editingTranslocation) {
+        await axios.put(`${API}/translocations/${editingTranslocation.id}`, translocationData);
+        setEditingTranslocation(null);
+      } else {
+        await axios.post(`${API}/translocations`, translocationData);
+      }
       fetchTranslocations();
       fetchStats();
       setShowForm(false);
     } catch (error) {
-      console.error('Error adding translocation:', error);
-      alert('Error adding translocation. Please check all fields.');
+      console.error('Error saving translocation:', error);
+      alert('Error saving translocation. Please check all fields.');
     }
+  };
+
+  const deleteTranslocation = async (translocationId) => {
+    if (window.confirm('Are you sure you want to delete this translocation record?')) {
+      try {
+        await axios.delete(`${API}/translocations/${translocationId}`);
+        fetchTranslocations();
+        fetchStats();
+      } catch (error) {
+        console.error('Error deleting translocation:', error);
+      }
+    }
+  };
+
+  const editTranslocation = (translocation) => {
+    setEditingTranslocation(translocation);
+    setShowForm(true);
+    setShowDataTable(false);
+  };
+
+  const cancelEdit = () => {
+    setEditingTranslocation(null);
+    setShowForm(false);
   };
 
   const applyFilters = () => {
@@ -704,8 +735,11 @@ function App() {
     if (filters.year) {
       filtered = filtered.filter(t => t.year === parseInt(filters.year));
     }
-    if (filters.transport_mode) {
-      filtered = filtered.filter(t => t.transport_mode === filters.transport_mode);
+    if (filters.transport) {
+      filtered = filtered.filter(t => t.transport === filters.transport);
+    }
+    if (filters.special_project) {
+      filtered = filtered.filter(t => t.special_project === filters.special_project);
     }
     
     setFilteredTranslocations(filtered);
