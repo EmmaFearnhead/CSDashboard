@@ -458,7 +458,15 @@ function App() {
                 <option value="White Rhino">White Rhino</option>
                 <option value="Black Rhino">Black Rhino</option>
                 <option value="Plains Game Species">Plains Game Species</option>
-                <option value="Other">Other</option>
+                <option value="Lion">Lion</option>
+                <option value="Buffalo">Buffalo</option>
+                <option value="Hippo">Hippo</option>
+                <option value="Giraffe">Giraffe</option>
+                <option value="Zebra">Zebra</option>
+                <option value="Kudu">Kudu</option>
+                <option value="Sable">Sable</option>
+                <option value="Impala">Impala</option>
+                <option value="Waterbuck">Waterbuck</option>
               </select>
 
               <select
