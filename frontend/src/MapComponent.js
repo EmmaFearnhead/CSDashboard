@@ -187,7 +187,7 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
 
     // Transport mode icons
     const getTransportIcon = (mode) => {
-      return mode === 'Air' ? '✈️' : '🚛';
+      return mode === 'Air' ? 'Air' : 'Road';
     };
 
     const bounds = [];
