@@ -189,8 +189,11 @@ async def import_excel_file(file: UploadFile = File(...)):
         print(f"  Number: {number_col}")
         print(f"  Source name: {source_name_col}")
         print(f"  Source coords: {source_coord_col}")
-        
-        # Process each row - VERY PERMISSIVE
+        print(f"  Source country: {source_country_col}")
+        print(f"  Dest name: {dest_name_col}")
+        print(f"  Dest coords: {dest_coord_col}")
+        print(f"  Dest country: {dest_country_col}")
+        print(f"Available columns in file: {list(df.columns)}")
         created_translocations = []
         errors = []
         
