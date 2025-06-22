@@ -1,0 +1,3 @@
+Project Title,Year,Species,Number,Source Area: Name,Source Area: Co-Ordinates,Source Area: Country,Recipient Area: Name,Recipient Area: Co-Ordinates,Recipient Area: Country,Transport,Special Project,Additional Info
+Test Year Format,2023 & 2023,Elephant,15,Test Source,"-27.808, 32.349",South Africa,Test Destination,"-25.123, 30.567",Botswana,Road,African Parks,Testing complex year format
+Another Test,2022-2023,White Rhino,8,Source Park,"-24.555, 29.888",South Africa,Destination Park,"-23.111, 32.444",Namibia,Air,,Testing another year format
