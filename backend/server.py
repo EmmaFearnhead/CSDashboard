@@ -544,6 +544,11 @@ async def import_excel_file(file: UploadFile = File(...)):
                 original_species = row[found_columns['species']] if not pd.isna(row[found_columns['species']]) else ""
                 species = categorize_species(original_species, additional_info)
                 
+                # Ensure species is a valid enum value
+                if species not in [e.value for e in Species]:
+                    # Default to "Other" if not a recognized species
+                    species = "Other"
+                
                 # Source area
                 source_name = str(row[found_columns.get('source_name', 'Source Area: Name')]) if found_columns.get('source_name') and not pd.isna(row[found_columns.get('source_name', 'Source Area: Name')]) else "Unknown Source"
                 source_coordinates = validate_coordinates(row[found_columns.get('source_coordinates', 'Source Area: Co-Ordinates')])
