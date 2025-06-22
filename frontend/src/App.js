@@ -308,6 +308,34 @@ function App() {
     }
   };
 
+  const importExcelFile = async (file) => {
+    try {
+      setUploadLoading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await axios.post(`${API}/translocations/import-excel-file`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      console.log('Upload response:', response.data);
+      alert(`Successfully imported ${response.data.successful_imports} records from ${response.data.total_rows_processed} rows!`);
+      
+      // Refresh data
+      await fetchTranslocations();
+      await fetchStats();
+      setShowFileUpload(false);
+      
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert(`Error uploading file: ${error.response?.data?.detail || error.message}`);
+    } finally {
+      setUploadLoading(false);
+    }
+  };
+
   const addTranslocation = async (translocationData) => {
     try {
       if (editingTranslocation) {
