@@ -874,10 +874,85 @@ function App() {
           </div>
         </div>
 
+        {/* Data Table */}
+        {showDataTable && (
+          <div className="mb-6">
+            <div className="bg-white p-6 rounded-lg nature-shadow-lg border-l-4 border-forest-green">
+              <h3 className="text-xl font-bold mb-4 text-forest-dark flex items-center">
+                <span className="text-2xl mr-2">📋</span>
+                Conservation Records ({filteredTranslocations.length})
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-nature-light border-b-2 border-sage-green">
+                      <th className="text-left p-2">Project</th>
+                      <th className="text-left p-2">Year</th>
+                      <th className="text-left p-2">Species</th>
+                      <th className="text-left p-2">Animals</th>
+                      <th className="text-left p-2">From → To</th>
+                      <th className="text-left p-2">Transport</th>
+                      <th className="text-left p-2">Special Project</th>
+                      <th className="text-left p-2">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredTranslocations.map((translocation) => (
+                      <tr key={translocation.id} className="border-b hover:bg-nature-light">
+                        <td className="p-2 font-medium">{translocation.project_title}</td>
+                        <td className="p-2">{translocation.year}</td>
+                        <td className="p-2">{translocation.species}</td>
+                        <td className="p-2 text-center font-bold text-nature-green">{translocation.number_of_animals}</td>
+                        <td className="p-2">
+                          <div className="text-xs">
+                            <div className="font-medium">{translocation.source_area.name}</div>
+                            <div className="text-nature-brown">↓</div>
+                            <div className="font-medium">{translocation.recipient_area.name}</div>
+                          </div>
+                        </td>
+                        <td className="p-2">
+                          {translocation.transport === 'Road' ? '🚛' : '✈️'} {translocation.transport}
+                        </td>
+                        <td className="p-2">
+                          {translocation.special_project && (
+                            <span className="bg-forest-light text-forest-dark px-2 py-1 rounded text-xs">
+                              {translocation.special_project}
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-2">
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => editTranslocation(translocation)}
+                              className="bg-nature-green text-white px-2 py-1 rounded text-xs hover:bg-forest-green"
+                            >
+                              ✏️ Edit
+                            </button>
+                            <button
+                              onClick={() => deleteTranslocation(translocation.id)}
+                              className="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600"
+                            >
+                              🗑️ Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Add Form */}
         {showForm && (
           <div className="mb-6">
-            <TranslocationForm onSubmit={addTranslocation} />
+            <TranslocationForm 
+              onSubmit={addTranslocation} 
+              editingTranslocation={editingTranslocation}
+              onCancel={cancelEdit}
+            />
           </div>
         )}
 
