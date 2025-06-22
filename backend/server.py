@@ -147,129 +147,155 @@ async def update_translocation(translocation_id: str, translocation: Translocati
     updated_translocation = await db.translocations.find_one({"id": translocation_id})
     return Translocation(**updated_translocation)
 
+@api_router.post("/translocations/import-historical")
+async def import_historical_data():
+    """Import the user's historical translocation data"""
+    
+    # Helper function to parse coordinates and get lat/lng
+    def parse_coordinates(coord_string):
+        if not coord_string or coord_string == "":
+            return 0.0, 0.0
+        try:
+            # Remove any extra characters and split
+            coords = coord_string.replace("°", "").replace("'", "").replace('"', "")
+            if "," in coords:
+                parts = coords.split(",")
+                lat = float(parts[0].strip())
+                lng = float(parts[1].strip())
+                return lat, lng
+            return 0.0, 0.0
+        except:
+            return 0.0, 0.0
+    
+    historical_data = [
+        {
+            "project_title": "500 Elephants",
+            "year": 2016,
+            "species": "Elephant",
+            "number_of_animals": 500,
+            "source_area": {
+                "name": "Liwonde National Park",
+                "coordinates": "-14.843917138011093, -35.346718672081",
+                "country": "Malawi"
+            },
+            "recipient_area": {
+                "name": "Nkhotakota National Park",
+                "coordinates": "-12.798572066646505, -34.0114801594613",
+                "country": "Malawi"
+            },
+            "transport": "Road",
+            "special_project": "African Parks",
+            "additional_info": ""
+        },
+        {
+            "project_title": "Buffalo Kloof Elies",
+            "year": 2017,
+            "species": "Elephant",
+            "number_of_animals": 10,
+            "source_area": {
+                "name": "Mankgawe Private Game Reserve",
+                "coordinates": "-35.14358903356, -23.39279790103946",
+                "country": "South Africa"
+            },
+            "recipient_area": {
+                "name": "Buffalo Kloof",
+                "coordinates": "-33.408619412724946, -33.6080821090958",
+                "country": "South Africa"
+            },
+            "transport": "Road",
+            "special_project": "",
+            "additional_info": ""
+        },
+        {
+            "project_title": "Black Rhino Akagera",
+            "year": 2017,
+            "species": "Black Rhino",
+            "number_of_animals": 18,
+            "source_area": {
+                "name": "Thaba Tholo",
+                "coordinates": "-24.52810027320283, -27.86500001521125",
+                "country": "South Africa"
+            },
+            "recipient_area": {
+                "name": "Akagera National Park",
+                "coordinates": "-1.879435086486515, -30.796346402720666",
+                "country": "Rwanda"
+            },
+            "transport": "Air",
+            "special_project": "African Parks",
+            "additional_info": ""
+        },
+        {
+            "project_title": "Nyika Elephants",
+            "year": 2017,
+            "species": "Elephant",
+            "number_of_animals": 34,
+            "source_area": {
+                "name": "Liwonde National Park",
+                "coordinates": "-14.843917138011093, -35.346718672081",
+                "country": "Malawi"
+            },
+            "recipient_area": {
+                "name": "Nyika National Park",
+                "coordinates": "-10.796818680346909, -33.75203456365907",
+                "country": "Malawi"
+            },
+            "transport": "Road",
+            "special_project": "African Parks",
+            "additional_info": ""
+        },
+        {
+            "project_title": "Zimbabwe Elephant Nursery",
+            "year": 2018,
+            "species": "Elephant",
+            "number_of_animals": 6,
+            "source_area": {
+                "name": "Zimbabwe Elephant Nursery",
+                "coordinates": "-31.86027869063172, -25.850754187789392",
+                "country": "Zimbabwe"
+            },
+            "recipient_area": {
+                "name": "Panda Masuie National Park",
+                "coordinates": "-25.850754187789392, -21.87866026637094",
+                "country": "Zimbabwe"
+            },
+            "transport": "Road",
+            "special_project": "",
+            "additional_info": ""
+        }
+        # Add more entries as needed - this is a sample of the first few
+    ]
+    
+    created_translocations = []
+    for data in historical_data:
+        translocation_obj = Translocation(**data)
+        await db.translocations.insert_one(translocation_obj.dict())
+        created_translocations.append(translocation_obj)
+    
+    return {"message": f"Imported {len(created_translocations)} historical translocations", "translocations": created_translocations}
+
 @api_router.post("/translocations/sample-data")
 async def create_sample_data():
-    # Sample African reserves and their coordinates
+    # Keep the existing sample data for demo purposes
     sample_translocations = [
         {
-            "species": "elephant",
+            "project_title": "Sample Elephant Translocation",
+            "year": 2023,
+            "species": "Elephant",
             "number_of_animals": 25,
-            "month": 6,
-            "year": 2023,
-            "source_reserve": {
+            "source_area": {
                 "name": "Kruger National Park",
-                "country": "South Africa",
-                "latitude": -24.0063,
-                "longitude": 31.4953
+                "coordinates": "-24.0063, 31.4953",
+                "country": "South Africa"
             },
-            "recipient_reserve": {
-                "name": "Addo Elephant National Park",
-                "country": "South Africa", 
-                "latitude": -33.4734,
-                "longitude": 25.7519
+            "recipient_area": {
+                "name": "Addo Elephant National Park", 
+                "coordinates": "-33.4734, 25.7519",
+                "country": "South Africa"
             },
-            "transport_mode": "road",
-            "additional_notes": "Family herd relocation due to overpopulation"
-        },
-        {
-            "species": "rhino",
-            "number_of_animals": 8,
-            "month": 9,
-            "year": 2023,
-            "source_reserve": {
-                "name": "Hluhluwe-iMfolozi Park",
-                "country": "South Africa",
-                "latitude": -28.2742,
-                "longitude": 32.0961
-            },
-            "recipient_reserve": {
-                "name": "Maasai Mara",
-                "country": "Kenya",
-                "latitude": -1.4061,
-                "longitude": 35.0059
-            },
-            "transport_mode": "air",
-            "additional_notes": "White rhino conservation breeding program"
-        },
-        {
-            "species": "elephant",
-            "number_of_animals": 15,
-            "month": 3,
-            "year": 2024,
-            "source_reserve": {
-                "name": "Hwange National Park",
-                "country": "Zimbabwe",
-                "latitude": -18.6297,
-                "longitude": 26.4285
-            },
-            "recipient_reserve": {
-                "name": "Gonarezhou National Park",
-                "country": "Zimbabwe",
-                "latitude": -21.5417,
-                "longitude": 31.2167
-            },
-            "transport_mode": "road",
-            "additional_notes": "Drought mitigation relocation"
-        },
-        {
-            "species": "rhino",
-            "number_of_animals": 4,
-            "month": 11,
-            "year": 2023,
-            "source_reserve": {
-                "name": "Etosha National Park",
-                "country": "Namibia",
-                "latitude": -19.1544,
-                "longitude": 15.9463
-            },
-            "recipient_reserve": {
-                "name": "Waterberg Plateau Park",
-                "country": "Namibia",
-                "latitude": -20.4500,
-                "longitude": 17.2333
-            },
-            "transport_mode": "road",
-            "additional_notes": "Black rhino genetic diversity program"
-        },
-        {
-            "species": "elephant",
-            "number_of_animals": 35,
-            "month": 8,
-            "year": 2024,
-            "source_reserve": {
-                "name": "Tsavo East National Park",
-                "country": "Kenya",
-                "latitude": -2.6816,
-                "longitude": 38.4481
-            },
-            "recipient_reserve": {
-                "name": "Amboseli National Park",
-                "country": "Kenya",
-                "latitude": -2.6527,
-                "longitude": 37.2606
-            },
-            "transport_mode": "road",
-            "additional_notes": "Habitat restoration project relocation"
-        },
-        {
-            "species": "rhino",
-            "number_of_animals": 6,
-            "month": 1,
-            "year": 2024,
-            "source_reserve": {
-                "name": "Pilanesberg National Park",
-                "country": "South Africa",
-                "latitude": -25.2394,
-                "longitude": 27.0767
-            },
-            "recipient_reserve": {
-                "name": "Chobe National Park",
-                "country": "Botswana",
-                "latitude": -18.5539,
-                "longitude": 24.0303
-            },
-            "transport_mode": "air",
-            "additional_notes": "Cross-border conservation initiative"
+            "transport": "Road",
+            "special_project": "Peace Parks",
+            "additional_info": "Sample family herd relocation"
         }
     ]
     
