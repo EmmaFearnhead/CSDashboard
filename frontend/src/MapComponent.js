@@ -43,7 +43,7 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
         mapRef.current = null;
       }
 
-      // Create map centered on Africa
+      // Create map centered on Africa with enhanced zoom controls
       mapRef.current = window.L.map('map', {
         zoomControl: true,
         scrollWheelZoom: true,
@@ -51,8 +51,47 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
         boxZoom: true,
         keyboard: true,
         dragging: true,
-        touchZoom: true
+        touchZoom: true,
+        zoomSnap: 0.5,
+        zoomDelta: 0.5,
+        wheelPxPerZoomLevel: 60,
+        maxZoom: 18,
+        minZoom: 2
       }).setView([-15, 25], 4);
+
+      // Add enhanced zoom control with additional buttons
+      const zoomControl = window.L.control.zoom({
+        position: 'topright',
+        zoomInTitle: 'Zoom In',
+        zoomOutTitle: 'Zoom Out'
+      });
+      mapRef.current.addControl(zoomControl);
+
+      // Add custom zoom to Africa button
+      const zoomToAfricaControl = window.L.Control.extend({
+        onAdd: function(map) {
+          const container = window.L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
+          container.style.backgroundColor = 'white';
+          container.style.width = '30px';
+          container.style.height = '30px';
+          container.style.cursor = 'pointer';
+          container.style.display = 'flex';
+          container.style.alignItems = 'center';
+          container.style.justifyContent = 'center';
+          container.style.fontSize = '16px';
+          container.style.fontWeight = 'bold';
+          container.innerHTML = '🌍';
+          container.title = 'Zoom to Africa';
+          
+          container.onclick = function() {
+            map.setView([-15, 25], 4);
+          };
+          
+          return container;
+        }
+      });
+      
+      mapRef.current.addControl(new zoomToAfricaControl({ position: 'topright' }));
 
       // English tile providers with better reliability
       const tileLayerOptions = [
