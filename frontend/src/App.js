@@ -662,23 +662,26 @@ function App() {
             <StatsPanel stats={stats} />
             
             {/* Legend */}
-            <div className="bg-white p-6 rounded-lg shadow-lg">
-              <h3 className="text-xl font-bold mb-4">Map Legend</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 rounded-full bg-red-400 border-2 border-white"></div>
-                  <span>Source Location</span>
+            <div className="bg-white p-6 rounded-lg nature-shadow-lg border-l-4 border-sage-green">
+              <h3 className="text-xl font-bold mb-4 text-forest-dark flex items-center">
+                <span className="text-2xl mr-2">🗺️</span>
+                Map Legend
+              </h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex items-center space-x-3">
+                  <div className="w-4 h-4 rounded-full border-2 border-white opacity-80" style={{backgroundColor: '#8B4513'}}></div>
+                  <span className="text-forest-dark">Source Location</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 rounded-full bg-red-600 border-2 border-black"></div>
-                  <span>Destination Location</span>
+                <div className="flex items-center space-x-3">
+                  <div className="w-4 h-4 rounded-full border-2 border-black" style={{backgroundColor: '#8B4513'}}></div>
+                  <span className="text-forest-dark">Destination Location</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-1 bg-red-400"></div>
-                  <span>Translocation Route</span>
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-1 opacity-60" style={{backgroundColor: '#8B4513'}}></div>
+                  <span className="text-forest-dark">Translocation Route</span>
                 </div>
-                <div className="mt-3 text-xs text-gray-500">
-                  Click markers for detailed information
+                <div className="mt-4 text-xs text-nature-brown bg-nature-light p-2 rounded">
+                  💡 Click map markers for detailed information about each translocation
                 </div>
               </div>
             </div>
