@@ -769,7 +769,7 @@ const FileUploadComponent = ({ onFileUpload, loading, onCancel }) => {
   return (
     <div className="bg-white p-8 rounded-lg shadow-xl border-l-4 border-nature-green">
       <div className="text-center mb-6">
-        <h3 className="text-2xl font-bold text-forest-dark mb-2">🗂️ Upload Your Excel Data</h3>
+        <h3 className="text-2xl font-bold text-forest-dark mb-2">Upload Your Excel Data</h3>
         <p className="text-nature-brown">Import your corrected conservation data with updated locations and coordinates</p>
       </div>
       
@@ -787,7 +787,6 @@ const FileUploadComponent = ({ onFileUpload, loading, onCancel }) => {
       >
         {selectedFile ? (
           <div className="space-y-4">
-            <div className="text-6xl">✅</div>
             <div className="text-xl font-bold text-forest-dark">File Selected Successfully!</div>
             <div className="bg-white p-4 rounded-lg shadow-sm border border-green-200">
               <div className="text-lg font-semibold text-forest-dark">{selectedFile.name}</div>
@@ -798,7 +797,6 @@ const FileUploadComponent = ({ onFileUpload, loading, onCancel }) => {
             {!isValidFile && (
               <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg">
                 <div className="flex items-center">
-                  <span className="text-2xl mr-2">⚠️</span>
                   <div>
                     <strong>Invalid File Type</strong>
                     <p className="text-sm">Please select an Excel (.xlsx, .xls) or CSV (.csv) file</p>
@@ -809,7 +807,6 @@ const FileUploadComponent = ({ onFileUpload, loading, onCancel }) => {
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="text-8xl text-nature-green">📊</div>
             <div>
               <div className="text-xl font-bold text-forest-dark mb-2">
                 Drag & Drop Your Excel File Here
@@ -837,14 +834,14 @@ const FileUploadComponent = ({ onFileUpload, loading, onCancel }) => {
             htmlFor="file-upload"
             className="inline-block mt-6 bg-gradient-to-r from-nature-green to-forest-green text-white px-8 py-4 rounded-lg hover:from-forest-green hover:to-forest-dark transition-all duration-300 cursor-pointer shadow-lg transform hover:scale-105 font-semibold"
           >
-            📁 Choose Your Excel File
+            Choose Your Excel File
           </label>
         )}
       </div>
 
       <div className="mt-8 space-y-4">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h4 className="font-semibold text-blue-800 mb-2">📋 Expected Column Structure:</h4>
+          <h4 className="font-semibold text-blue-800 mb-2">Expected Column Structure:</h4>
           <div className="text-sm text-blue-700 space-y-1">
             <div><strong>Required:</strong> Project Title, Year, Species, Number</div>
             <div><strong>Location Data:</strong> Source Area: Name, Source Area: Co-Ordinates, Source Area: Country</div>
@@ -869,7 +866,7 @@ const FileUploadComponent = ({ onFileUpload, loading, onCancel }) => {
                 Processing...
               </div>
             ) : (
-              '🚀 Import Data'
+              'Import Data'
             )}
           </button>
           
