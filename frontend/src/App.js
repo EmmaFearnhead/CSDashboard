@@ -648,13 +648,16 @@ const TranslocationForm = ({ onSubmit, editingTranslocation, onCancel }) => {
 };
 
 const StatsPanel = ({ stats }) => {
+  // Sort species by total animals count (most to least)
+  const sortedStats = Object.entries(stats).sort((a, b) => b[1].total_animals - a[1].total_animals);
+  
   return (
     <div className="bg-white p-6 rounded-lg nature-shadow-lg border-l-4 border-forest-green">
       <h3 className="text-xl font-bold mb-4 text-forest-dark flex items-center">
         Conservation Impact
       </h3>
       <div className="space-y-3">
-        {Object.entries(stats).map(([species, data]) => (
+        {sortedStats.map(([species, data]) => (
           <div key={species} className="stats-item flex justify-between items-center p-3 rounded-md">
             <div className="flex items-center space-x-3">
               <span className="font-medium capitalize text-forest-dark">{species}</span>
