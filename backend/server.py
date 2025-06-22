@@ -4,6 +4,7 @@ import pandas as pd
 import io
 import logging
 import uuid
+import traceback
 from datetime import datetime
 from typing import List, Optional
 from enum import Enum
