@@ -1,0 +1,38 @@
+<svg width="300" height="200" viewBox="0 0 300 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Curved landscape line -->
+  <path d="M0 180 Q75 160 150 160 Q225 160 300 180 L300 200 L0 200 Z" fill="#20674F"/>
+  
+  <!-- Elephant silhouette -->
+  <g transform="translate(75, 50)">
+    <!-- Main body -->
+    <ellipse cx="75" cy="75" rx="45" ry="30" fill="#20674F"/>
+    
+    <!-- Head -->
+    <ellipse cx="40" cy="60" rx="25" ry="20" fill="#20674F"/>
+    
+    <!-- Trunk -->
+    <path d="M15 65 Q5 75 8 85 Q12 95 20 90 Q25 85 22 80 Q18 75 15 65" fill="#20674F"/>
+    
+    <!-- Ears -->
+    <ellipse cx="35" cy="50" rx="15" ry="18" fill="#20674F"/>
+    <ellipse cx="50" cy="52" rx="12" ry="16" fill="#20674F"/>
+    
+    <!-- Legs -->
+    <rect x="50" y="95" width="8" height="25" fill="#20674F"/>
+    <rect x="65" y="95" width="8" height="25" fill="#20674F"/>
+    <rect x="80" y="95" width="8" height="25" fill="#20674F"/>
+    <rect x="95" y="95" width="8" height="25" fill="#20674F"/>
+    
+    <!-- Tail -->
+    <path d="M120 80 Q130 85 125 95" stroke="#20674F" stroke-width="3" fill="none"/>
+    
+    <!-- Tusk -->
+    <path d="M15 70 L10 75" stroke="#20674F" stroke-width="2"/>
+  </g>
+  
+  <!-- Text: conservation -->
+  <text x="20" y="160" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#7B6943">conservation</text>
+  
+  <!-- Text: solutions -->
+  <text x="50" y="190" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#7B6943">solutions</text>
+</svg>
