@@ -893,20 +893,20 @@ function App() {
                   onClick={importHistoricalData}
                   className="bg-forest-green text-white px-4 py-2 rounded-md hover:bg-forest-dark transition-colors shadow-md"
                 >
-                  📊 Import Historical Data
+                  Import Historical Data
                 </button>
               )}
               <button
                 onClick={() => {setShowForm(!showForm); setEditingTranslocation(null);}}
                 className="bg-nature-green text-white px-4 py-2 rounded-md hover:bg-forest-green transition-colors shadow-md"
               >
-                {showForm ? 'Hide Form' : '🌿 Add New Record'}
+                {showForm ? 'Hide Form' : 'Add New Record'}
               </button>
               <button
                 onClick={() => setShowDataTable(!showDataTable)}
                 className="bg-forest-green text-white px-4 py-2 rounded-md hover:bg-forest-dark transition-colors shadow-md"
               >
-                {showDataTable ? 'Hide Table' : '📋 View/Edit Records'}
+                {showDataTable ? 'Hide Table' : 'View/Edit Records'}
               </button>
             </div>
           </div>
