@@ -147,9 +147,12 @@ async def update_translocation(translocation_id: str, translocation: Translocati
     updated_translocation = await db.translocations.find_one({"id": translocation_id})
     return Translocation(**updated_translocation)
 
-@api_router.post("/translocations/import-historical")
-async def import_historical_data():
-    """Import the user's complete historical translocation data"""
+@api_router.post("/translocations/clear-and-import")
+async def clear_and_import_historical_data():
+    """Clear existing data and import fresh historical translocation data"""
+    
+    # Clear existing data
+    await db.translocations.delete_many({})
     
     historical_data = [
         # 2016-2017 Projects
@@ -187,17 +190,6 @@ async def import_historical_data():
             "additional_info": ""
         },
         {
-            "project_title": "Buffalo Kloof Elies",
-            "year": 2017,
-            "species": "Elephant",
-            "number_of_animals": 2,
-            "source_area": {"name": "Mankgawe Private Game Reserve", "coordinates": "-35.14358903356, -23.39279790103946", "country": "South Africa"},
-            "recipient_area": {"name": "Buffalo Kloof", "coordinates": "-33.408619412724946, -33.6080821090958", "country": "South Africa"},
-            "transport": "Road",
-            "special_project": "",
-            "additional_info": ""
-        },
-        {
             "project_title": "Black Rhino Akagera",
             "year": 2017,
             "species": "Black Rhino",
@@ -219,8 +211,6 @@ async def import_historical_data():
             "special_project": "African Parks",
             "additional_info": ""
         },
-        
-        # 2018 Projects
         {
             "project_title": "Zimbabwe Elephant Nursery",
             "year": 2018,
@@ -254,8 +244,6 @@ async def import_historical_data():
             "special_project": "Peace Parks",
             "additional_info": ""
         },
-        
-        # 2019 Projects
         {
             "project_title": "Moremi Giants",
             "year": 2019,
@@ -278,8 +266,6 @@ async def import_historical_data():
             "special_project": "",
             "additional_info": ""
         },
-        
-        # 2020 Projects
         {
             "project_title": "Senabianda Bull",
             "year": 2020,
@@ -313,8 +299,6 @@ async def import_historical_data():
             "special_project": "",
             "additional_info": ""
         },
-        
-        # Continue with remaining years...
         {
             "project_title": "Maputo National Park Elephants",
             "year": 2020,
@@ -326,8 +310,6 @@ async def import_historical_data():
             "special_project": "Peace Parks",
             "additional_info": ""
         },
-        
-        # Add more recent projects (2021-2023)
         {
             "project_title": "Akagera White Rhino",
             "year": 2021,
@@ -358,7 +340,7 @@ async def import_historical_data():
         await db.translocations.insert_one(translocation_obj.dict())
         created_translocations.append(translocation_obj)
     
-    return {"message": f"Imported {len(created_translocations)} historical translocations", "translocations": created_translocations}
+    return {"message": f"Cleared old data and imported {len(created_translocations)} historical translocations", "translocations": created_translocations}
 
 @api_router.post("/translocations/sample-data")
 async def create_sample_data():
