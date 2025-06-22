@@ -634,21 +634,25 @@ function App() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Map */}
           <div className="lg:col-span-2">
-            <div className="bg-white p-6 rounded-lg shadow-lg">
-              <h2 className="text-2xl font-bold mb-4">Translocation Map</h2>
+            <div className="bg-white p-6 rounded-lg nature-shadow-lg border-l-4 border-nature-green">
+              <h2 className="text-2xl font-bold mb-4 text-forest-dark flex items-center">
+                <span className="text-3xl mr-3">🗺️</span>
+                Wildlife Translocation Map
+              </h2>
               {filteredTranslocations.length > 0 ? (
                 <Map translocations={translocations} filteredTranslocations={filteredTranslocations} />
               ) : (
-                <div className="w-full h-96 bg-gray-200 rounded-lg flex items-center justify-center">
+                <div className="w-full h-96 bg-nature-light rounded-lg flex items-center justify-center border-2 border-sage-green">
                   <div className="text-center">
-                    <div className="text-4xl mb-2">📍</div>
-                    <div className="text-gray-600">No translocations to display</div>
+                    <div className="text-6xl mb-4">🌿</div>
+                    <div className="text-nature-brown text-lg font-medium mb-2">No translocations to display</div>
+                    <div className="text-nature-brown text-sm mb-4">Load sample data to see conservation efforts across Africa</div>
                     {translocations.length === 0 && (
                       <button
                         onClick={createSampleData}
-                        className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                        className="bg-forest-green text-white px-6 py-3 rounded-md hover:bg-forest-dark transition-colors shadow-md"
                       >
-                        Load Sample Data
+                        🌍 Load Sample Data
                       </button>
                     )}
                   </div>
