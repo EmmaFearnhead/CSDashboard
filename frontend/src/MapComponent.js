@@ -1,0 +1,284 @@
+import { useState, useEffect, useRef } from "react";
+
+// Load Leaflet CSS and JS
+const loadLeafletResources = () => {
+  return new Promise((resolve) => {
+    if (window.L) {
+      resolve();
+      return;
+    }
+    const cssLink = document.createElement('link');
+    cssLink.rel = 'stylesheet';
+    cssLink.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    cssLink.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+    cssLink.crossOrigin = '';
+    document.head.appendChild(cssLink);
+
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+    script.crossOrigin = '';
+    script.onload = () => {
+      delete window.L.Icon.Default.prototype._getIconUrl;
+      window.L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+      });
+      resolve();
+    };
+    document.head.appendChild(script);
+  });
+};
+
+const MapComponent = ({ translocations, filteredTranslocations }) => {
+  const mapRef = useRef(null);
+  
+  useEffect(() => {
+    const initializeMap = async () => {
+      await loadLeafletResources();
+      
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+
+      // Create map centered on Africa
+      mapRef.current = window.L.map('map', {
+        zoomControl: true,
+        scrollWheelZoom: true,
+        doubleClickZoom: true,
+        boxZoom: true,
+        keyboard: true,
+        dragging: true,
+        touchZoom: true
+      }).setView([-15, 25], 4);
+
+      // English tile providers
+      const tileLayerOptions = [
+        {
+          url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+          attribution: '© OpenStreetMap contributors',
+          maxZoom: 19
+        },
+        {
+          url: 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
+          attribution: '© CartoDB, © OpenStreetMap contributors',
+          maxZoom: 19
+        },
+        {
+          url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+          attribution: '© Esri, © OpenStreetMap contributors',
+          maxZoom: 19
+        }
+      ];
+
+      const loadTileLayer = (index = 0) => {
+        if (index >= tileLayerOptions.length) {
+          console.warn('All tile providers failed, using basic background');
+          const canvas = document.createElement('canvas');
+          canvas.width = 256;
+          canvas.height = 256;
+          const ctx = canvas.getContext('2d');
+          
+          const gradient = ctx.createLinearGradient(0, 0, 0, 256);
+          gradient.addColorStop(0, '#87CEEB');
+          gradient.addColorStop(0.7, '#F0E68C');
+          gradient.addColorStop(1, '#8FBC8F');
+          
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, 256, 256);
+          
+          ctx.strokeStyle = '#DDD';
+          ctx.lineWidth = 1;
+          for (let i = 0; i <= 256; i += 32) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i, 256);
+            ctx.moveTo(0, i);
+            ctx.lineTo(256, i);
+            ctx.stroke();
+          }
+          
+          const dataUrl = canvas.toDataURL();
+          window.L.tileLayer(dataUrl, {
+            attribution: 'Basic Geographic Background',
+            maxZoom: 19,
+            tileSize: 256
+          }).addTo(mapRef.current);
+          return;
+        }
+
+        const tileLayer = window.L.tileLayer(tileLayerOptions[index].url, {
+          attribution: tileLayerOptions[index].attribution,
+          maxZoom: tileLayerOptions[index].maxZoom,
+          crossOrigin: true
+        });
+
+        tileLayer.on('tileerror', () => {
+          console.warn(`Tile provider ${index} failed, trying next...`);
+          tileLayer.remove();
+          loadTileLayer(index + 1);
+        });
+
+        tileLayer.on('tileload', () => {
+          console.log(`Successfully loaded tiles from provider ${index}`);
+        });
+
+        tileLayer.addTo(mapRef.current);
+      };
+
+      loadTileLayer();
+    };
+    
+    initializeMap();
+    
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
+  
+  // Update markers when filtered data changes
+  useEffect(() => {
+    if (!mapRef.current) return;
+    
+    // Clear existing markers and layers
+    mapRef.current.eachLayer(layer => {
+      if (layer instanceof window.L.Marker || 
+          layer instanceof window.L.Polyline || 
+          layer instanceof window.L.CircleMarker) {
+        if (!layer.options.permanent) { // Don't remove tile layers
+          mapRef.current.removeLayer(layer);
+        }
+      }
+    });
+    
+    // Species colors for simplified categorization
+    const speciesColors = {
+      'Elephant': '#FF6B6B',           // Red
+      'Black Rhino': '#2C3E50',       // Dark blue
+      'White Rhino': '#95A5A6',       // Light gray
+      'Plains Game Species': '#27AE60', // Green
+      'Other': '#F39C12'              // Orange
+    };
+
+    // Transport mode icons
+    const getTransportIcon = (mode) => {
+      return mode === 'Air' ? '✈️' : '🚛';
+    };
+
+    const bounds = [];
+
+    filteredTranslocations.forEach((translocation) => {
+      // Parse coordinates
+      const parseCoordinates = (coordString) => {
+        if (!coordString || coordString === "") return [0, 0];
+        try {
+          const coords = coordString.replace(/[°'"]/g, "").split(",");
+          if (coords.length >= 2) {
+            return [parseFloat(coords[0].trim()), parseFloat(coords[1].trim())];
+          }
+        } catch (error) {
+          console.error('Error parsing coordinates:', coordString, error);
+        }
+        return [0, 0];
+      };
+
+      const [sourceLat, sourceLng] = parseCoordinates(translocation.source_area.coordinates);
+      const [destLat, destLng] = parseCoordinates(translocation.recipient_area.coordinates);
+
+      // Skip invalid coordinates
+      if (sourceLat === 0 && sourceLng === 0 && destLat === 0 && destLng === 0) {
+        return;
+      }
+
+      const speciesColor = speciesColors[translocation.species] || speciesColors['Other'];
+
+      // Source marker (larger, white border)
+      const sourceMarker = window.L.circleMarker([sourceLat, sourceLng], {
+        radius: 10,
+        fillColor: speciesColor,
+        color: '#ffffff',
+        weight: 3,
+        opacity: 1,
+        fillOpacity: 0.9
+      }).addTo(mapRef.current);
+      
+      sourceMarker.bindTooltip(`Source: ${translocation.source_area.name}`);
+
+      // Destination marker (smaller, black border)
+      const destMarker = window.L.circleMarker([destLat, destLng], {
+        radius: 7,
+        fillColor: speciesColor,
+        color: '#000000',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.9
+      }).addTo(mapRef.current);
+      
+      destMarker.bindTooltip(`Destination: ${translocation.recipient_area.name}`);
+
+      // Connection line with proper styling
+      const polyline = window.L.polyline([[sourceLat, sourceLng], [destLat, destLng]], {
+        color: speciesColor,
+        weight: 4,
+        opacity: 0.8,
+        dashArray: translocation.transport === 'Air' ? '10, 5' : null
+      }).addTo(mapRef.current);
+
+      polyline.bindTooltip(`${translocation.project_title}: ${translocation.number_of_animals} ${translocation.species}`);
+
+      // Popups
+      const sourcePopupContent = `
+        <div style="padding: 10px; min-width: 220px;">
+          <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px; color: ${speciesColor};">${translocation.source_area.name}</h3>
+          <p><strong>Project:</strong> ${translocation.project_title}</p>
+          <p><strong>Species:</strong> ${translocation.species}</p>
+          <p><strong>Animals:</strong> ${translocation.number_of_animals}</p>
+          <p><strong>Year:</strong> ${translocation.year}</p>
+          <p><strong>Transport:</strong> ${getTransportIcon(translocation.transport)} ${translocation.transport}</p>
+          <p><strong>Role:</strong> Source Location</p>
+          ${translocation.special_project ? `<p><strong>Special Project:</strong> ${translocation.special_project}</p>` : ''}
+          ${translocation.additional_info ? `<p><strong>Notes:</strong> ${translocation.additional_info}</p>` : ''}
+        </div>
+      `;
+
+      const destPopupContent = `
+        <div style="padding: 10px; min-width: 220px;">
+          <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px; color: ${speciesColor};">${translocation.recipient_area.name}</h3>
+          <p><strong>Project:</strong> ${translocation.project_title}</p>
+          <p><strong>Species:</strong> ${translocation.species}</p>
+          <p><strong>Animals:</strong> ${translocation.number_of_animals}</p>
+          <p><strong>Year:</strong> ${translocation.year}</p>
+          <p><strong>Transport:</strong> ${getTransportIcon(translocation.transport)} ${translocation.transport}</p>
+          <p><strong>Role:</strong> Destination Location</p>
+          ${translocation.special_project ? `<p><strong>Special Project:</strong> ${translocation.special_project}</p>` : ''}
+          ${translocation.additional_info ? `<p><strong>Notes:</strong> ${translocation.additional_info}</p>` : ''}
+        </div>
+      `;
+
+      sourceMarker.bindPopup(sourcePopupContent);
+      destMarker.bindPopup(destPopupContent);
+
+      bounds.push([sourceLat, sourceLng]);
+      bounds.push([destLat, destLng]);
+    });
+
+    // Fit map to show all markers
+    if (bounds.length > 0) {
+      try {
+        mapRef.current.fitBounds(bounds, { padding: [20, 20] });
+      } catch (error) {
+        console.error('Error fitting bounds:', error);
+        mapRef.current.setView([-15, 25], 4);
+      }
+    }
+  }, [filteredTranslocations]);
+
+  return <div id="map" className="w-full h-96 rounded-lg shadow-lg"></div>;
+};
+
+export default MapComponent;
