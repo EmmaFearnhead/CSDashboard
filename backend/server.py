@@ -433,7 +433,35 @@ async def import_excel_file(file: UploadFile = File(...)):
         else:
             raise HTTPException(status_code=400, detail="File must be Excel (.xlsx, .xls) or CSV (.csv)")
         
-        # Helper function to categorize species
+        # Helper function to validate and format coordinates for Google Maps format
+        def validate_coordinates(coord_string):
+            if not coord_string or pd.isna(coord_string) or str(coord_string).strip() == "":
+                return "0, 0"
+            
+            try:
+                # Clean the coordinate string
+                clean_coords = str(coord_string).replace("°", "").replace("'", "").replace('"', "").strip()
+                
+                # Handle Google Maps format: "-27.808400634565363, 32.34692072433984"
+                if "," in clean_coords:
+                    parts = clean_coords.split(",")
+                    if len(parts) >= 2:
+                        lat = float(parts[0].strip())
+                        lng = float(parts[1].strip())
+                        
+                        # Validate coordinates are reasonable for Africa
+                        # Africa latitude range: roughly -35 to 37
+                        # Africa longitude range: roughly -20 to 52
+                        if (-40 <= lat <= 40) and (-25 <= lng <= 55):
+                            return f"{lat}, {lng}"
+                        else:
+                            print(f"Warning: Coordinates outside Africa range: {clean_coords}")
+                            return "0, 0"
+                
+                return "0, 0"
+            except Exception as e:
+                print(f"Error validating coordinates '{coord_string}': {e}")
+                return "0, 0"
         def categorize_species(original_species, additional_info=""):
             if pd.isna(original_species):
                 return "Other"
