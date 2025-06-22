@@ -653,8 +653,8 @@ async def import_excel_file(file: UploadFile = File(...)):
         print(f"Error processing file: {str(e)}")
         print(f"Detailed error: {error_details}")
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
-    
-    # Complete dataset from Excel file with corrected coordinates and species categorization
+
+# 5. Setup FastAPI App
     complete_data = [
         # 2016 & 2017
         {"project_title": "500 Elephants", "year": 2016, "species": "Elephant", "number_of_animals": 366, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.843917, 35.346718", "country": "Malawi"}, "recipient_area": {"name": "Nkhotakota National Park", "coordinates": "-12.798572, 34.011480", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": ""},
