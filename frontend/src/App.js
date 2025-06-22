@@ -691,4 +691,142 @@ function App() {
   );
 }
 
+const FileUploadComponent = ({ onFileUpload, loading, onCancel }) => {
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    setSelectedFile(file);
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    setDragOver(false);
+    const file = event.dataTransfer.files[0];
+    setSelectedFile(file);
+  };
+
+  const handleDragOver = (event) => {
+    event.preventDefault();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (event) => {
+    event.preventDefault();
+    setDragOver(false);
+  };
+
+  const handleUpload = () => {
+    if (selectedFile) {
+      onFileUpload(selectedFile);
+    }
+  };
+
+  const isValidFile = selectedFile && (
+    selectedFile.name.endsWith('.xlsx') || 
+    selectedFile.name.endsWith('.xls') || 
+    selectedFile.name.endsWith('.csv')
+  );
+
+  return (
+    <div className="bg-white p-6 rounded-lg shadow-lg border-l-4 border-nature-green">
+      <h3 className="text-xl font-bold mb-4 text-forest-dark">Upload Excel Data File</h3>
+      
+      <div 
+        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+          dragOver ? 'border-nature-green bg-nature-light' : 'border-sage-green'
+        }`}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+      >
+        {selectedFile ? (
+          <div className="space-y-4">
+            <div className="text-lg font-medium text-forest-dark">Selected File:</div>
+            <div className="bg-nature-light p-3 rounded-md">
+              <div className="font-medium">{selectedFile.name}</div>
+              <div className="text-sm text-nature-brown">
+                Size: {(selectedFile.size / 1024).toFixed(1)} KB
+              </div>
+              <div className="text-sm text-nature-brown">
+                Type: {selectedFile.type || 'Unknown'}
+              </div>
+            </div>
+            {!isValidFile && (
+              <div className="text-red-600 text-sm">
+                ⚠️ Please select an Excel (.xlsx, .xls) or CSV (.csv) file
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="text-6xl text-sage-green">📁</div>
+            <div className="text-lg font-medium text-forest-dark">
+              Drop your Excel file here or click to browse
+            </div>
+            <div className="text-sm text-nature-brown">
+              Supports: Excel (.xlsx, .xls) and CSV (.csv) files
+            </div>
+          </div>
+        )}
+        
+        <input
+          type="file"
+          accept=".xlsx,.xls,.csv"
+          onChange={handleFileSelect}
+          className="hidden"
+          id="file-upload"
+        />
+        
+        {!selectedFile && (
+          <label
+            htmlFor="file-upload"
+            className="inline-block mt-4 bg-nature-green text-white px-6 py-3 rounded-md hover:bg-forest-green transition-colors cursor-pointer shadow-md"
+          >
+            Choose File
+          </label>
+        )}
+      </div>
+
+      <div className="mt-6 space-y-3">
+        <div className="text-sm text-nature-brown">
+          <strong>Expected columns:</strong> Project Title, Year, Species, Number, Source Area: Name, Source Area: Co-Ordinates, 
+          Source Area: Country, Recipient Area: Name, Recipient Area: Co-Ordinates, Recipient Area: Country, Transport, Special Project, Additional Info
+        </div>
+        
+        <div className="flex gap-3">
+          <button
+            onClick={handleUpload}
+            disabled={!isValidFile || loading}
+            className={`flex-1 py-3 px-4 rounded-md font-semibold transition-colors shadow-md ${
+              isValidFile && !loading
+                ? 'bg-nature-green text-white hover:bg-forest-green'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            {loading ? 'Uploading...' : 'Upload & Import Data'}
+          </button>
+          
+          <button
+            onClick={onCancel}
+            className="px-6 py-3 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+        
+        {selectedFile && (
+          <button
+            onClick={() => setSelectedFile(null)}
+            className="text-sm text-nature-brown hover:text-forest-dark"
+          >
+            Choose different file
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default App;
