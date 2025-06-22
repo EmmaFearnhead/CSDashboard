@@ -327,6 +327,82 @@ def test_create_update_delete_translocation():
         print(f"❌ CRUD operations test failed: {str(e)}")
         return False
 
+def test_import_simplified_data():
+    """Test importing data with simplified species categorization"""
+    print("Testing import simplified data endpoint (POST /api/translocations/import-simplified-data)...")
+    
+    try:
+        response = requests.post(f"{API_URL}/translocations/import-simplified-data")
+        print(f"Status Code: {response.status_code}")
+        
+        assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
+        result = response.json()
+        
+        assert "message" in result, "Response should contain 'message' field"
+        assert "translocations" in result, "Response should contain 'translocations' field"
+        
+        translocations = result["translocations"]
+        print(f"Number of imported translocations: {len(translocations)}")
+        
+        # Get statistics to verify species categorization
+        stats_response = requests.get(f"{API_URL}/translocations/stats")
+        assert stats_response.status_code == 200, f"Expected status code 200 for stats, got {stats_response.status_code}"
+        stats = stats_response.json()
+        print(f"Statistics: {json.dumps(stats, indent=2)}")
+        
+        # Verify the simplified species categorization
+        species_categories = set(t["species"] for t in translocations)
+        print(f"Species categories: {sorted(species_categories)}")
+        
+        expected_categories = {"Elephant", "Black Rhino", "White Rhino", "Plains Game Species", "Other"}
+        for category in expected_categories:
+            assert category in species_categories, f"Expected category '{category}' not found in data"
+        
+        # Verify Plains Game Species has the highest count
+        assert "Plains Game Species" in stats, "Plains Game Species should be in the statistics"
+        plains_game_count = stats["Plains Game Species"]["total_animals"]
+        
+        # Verify Elephant has the second highest count
+        assert "Elephant" in stats, "Elephant should be in the statistics"
+        elephant_count = stats["Elephant"]["total_animals"]
+        
+        # Verify the expected counts (with some tolerance)
+        print(f"Plains Game Species count: {plains_game_count}")
+        print(f"Elephant count: {elephant_count}")
+        print(f"Other count: {stats.get('Other', {'total_animals': 0})['total_animals']}")
+        print(f"White Rhino count: {stats.get('White Rhino', {'total_animals': 0})['total_animals']}")
+        print(f"Black Rhino count: {stats.get('Black Rhino', {'total_animals': 0})['total_animals']}")
+        
+        # Check if Plains Game Species has more animals than Elephant
+        assert plains_game_count > elephant_count, f"Expected Plains Game Species count ({plains_game_count}) to be greater than Elephant count ({elephant_count})"
+        
+        # Verify counts are close to expected values (with 10% tolerance)
+        assert abs(plains_game_count - 3442) / 3442 < 0.1, f"Plains Game Species count ({plains_game_count}) is not close to expected (~3,442)"
+        assert abs(elephant_count - 1101) / 1101 < 0.1, f"Elephant count ({elephant_count}) is not close to expected (~1,101)"
+        assert abs(stats.get("Other", {"total_animals": 0})["total_animals"] - 687) / 687 < 0.1, f"Other count is not close to expected (~687)"
+        assert abs(stats.get("White Rhino", {"total_animals": 0})["total_animals"] - 186) / 186 < 0.1, f"White Rhino count is not close to expected (~186)"
+        assert abs(stats.get("Black Rhino", {"total_animals": 0})["total_animals"] - 77) / 77 < 0.1, f"Black Rhino count is not close to expected (~77)"
+        
+        # Check Plains Game Species entries have proper breakdowns in additional_info
+        plains_game_entries = [t for t in translocations if t["species"] == "Plains Game Species"]
+        for entry in plains_game_entries:
+            assert entry["additional_info"], f"Plains Game Species entry {entry['id']} should have additional_info"
+            # Check for common plains game species in the additional_info
+            plains_game_keywords = ["buffalo", "impala", "sable", "kudu", "warthog", "waterbuck", "eland", "zebra", "hartebeest"]
+            has_species_breakdown = any(keyword.lower() in entry["additional_info"].lower() for keyword in plains_game_keywords)
+            assert has_species_breakdown, f"Plains Game Species entry {entry['id']} should have species breakdown in additional_info"
+        
+        # Check Other entries have primary species noted
+        other_entries = [t for t in translocations if t["species"] == "Other"]
+        for entry in other_entries:
+            assert "Primary species:" in entry["additional_info"], f"Other entry {entry['id']} should have primary species noted in additional_info"
+        
+        print("✅ Import simplified data test passed!")
+        return True
+    except Exception as e:
+        print(f"❌ Import simplified data test failed: {str(e)}")
+        return False
+
 def run_all_tests():
     """Run all tests and return overall success status"""
     print_separator()
@@ -341,6 +417,7 @@ def run_all_tests():
         "Health Check": test_health_check(),
         "Get All Translocations": test_get_translocations(),
         "Import Complete Excel Data": test_import_complete_excel_data(),
+        "Import Simplified Data": test_import_simplified_data(),
         "Get Translocation Stats": test_get_translocation_stats(),
         "Filtered Translocations": test_filtered_translocations(),
         "CRUD Operations": test_create_update_delete_translocation()
