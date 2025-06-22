@@ -1,0 +1,2 @@
+Project Title,Year,Species,Number,Source Area: Name,Source Area: Co-Ordinates,Source Area: Country,Recipient Area: Name,Recipient Area: Co-Ordinates,Recipient Area: Country,Transport,Special Project,Additional Info
+Kruger Test,2024,Elephant,10,Kruger Source,"-24.996, 31.554",South Africa,Pilanesberg Destination,"-25.340, 27.084",South Africa,Road,African Parks,Test with known South African park coordinates
