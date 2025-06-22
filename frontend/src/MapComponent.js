@@ -72,15 +72,16 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
         onAdd: function(map) {
           const container = window.L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
           container.style.backgroundColor = 'white';
-          container.style.width = '30px';
+          container.style.width = '80px';
           container.style.height = '30px';
           container.style.cursor = 'pointer';
           container.style.display = 'flex';
           container.style.alignItems = 'center';
           container.style.justifyContent = 'center';
-          container.style.fontSize = '16px';
+          container.style.fontSize = '12px';
           container.style.fontWeight = 'bold';
-          container.innerHTML = '🌍';
+          container.style.border = '1px solid #ccc';
+          container.innerHTML = 'Reset View';
           container.title = 'Zoom to Africa';
           
           container.onclick = function() {
