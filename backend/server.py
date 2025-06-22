@@ -311,12 +311,38 @@ async def import_excel_file(file: UploadFile = File(...)):
                 
                 source_coords = "0, 0"
                 if source_coord_col and not pd.isna(row[source_coord_col]):
-                    coord_str = str(row[source_coord_col])
-                    # Extract coordinates from any format
-                    import re
-                    coord_match = re.findall(r'-?\d+\.?\d*', coord_str)
-                    if len(coord_match) >= 2:
-                        source_coords = f"{coord_match[0]}, {coord_match[1]}"
+                    coord_str = str(row[source_coord_col]).strip()
+                    print(f"Processing source coordinates: '{coord_str}'")
+                    # Extract coordinates from any format - handle Google Maps format
+                    if ',' in coord_str:
+                        # Handle formats like "-28.2628, 31.9685" or "-28.262800, 31.968500"
+                        coord_str_clean = coord_str.replace('"', '').replace("'", "").strip()
+                        parts = coord_str_clean.split(',')
+                        if len(parts) >= 2:
+                            try:
+                                lat = float(parts[0].strip())
+                                lng = float(parts[1].strip())
+                                # Validate coordinates are reasonable for Africa
+                                if (-40 <= lat <= 40) and (-25 <= lng <= 55):
+                                    source_coords = f"{lat}, {lng}"
+                                    print(f"Successfully parsed source coordinates: {source_coords}")
+                                else:
+                                    print(f"Source coordinates outside Africa range: {lat}, {lng}")
+                            except ValueError as e:
+                                print(f"Error parsing source coordinates: {e}")
+                    else:
+                        # Fallback: extract numbers with regex
+                        import re
+                        coord_match = re.findall(r'-?\d+\.?\d*', coord_str)
+                        if len(coord_match) >= 2:
+                            try:
+                                lat = float(coord_match[0])
+                                lng = float(coord_match[1])
+                                if (-40 <= lat <= 40) and (-25 <= lng <= 55):
+                                    source_coords = f"{lat}, {lng}"
+                                    print(f"Regex parsed source coordinates: {source_coords}")
+                            except ValueError as e:
+                                print(f"Error with regex parsing source coordinates: {e}")
                 
                 source_country_val = row[source_country_col] if source_country_col and not pd.isna(row[source_country_col]) else None
                 source_country = str(source_country_val).strip() if source_country_val is not None else "Unknown"
@@ -329,11 +355,38 @@ async def import_excel_file(file: UploadFile = File(...)):
                 
                 dest_coords = "0, 0"
                 if dest_coord_col and not pd.isna(row[dest_coord_col]):
-                    coord_str = str(row[dest_coord_col])
-                    import re
-                    coord_match = re.findall(r'-?\d+\.?\d*', coord_str)
-                    if len(coord_match) >= 2:
-                        dest_coords = f"{coord_match[0]}, {coord_match[1]}"
+                    coord_str = str(row[dest_coord_col]).strip()
+                    print(f"Processing destination coordinates: '{coord_str}'")
+                    # Extract coordinates from any format - handle Google Maps format
+                    if ',' in coord_str:
+                        # Handle formats like "-25.0194, 31.4659" or "-25.019400, 31.465900"
+                        coord_str_clean = coord_str.replace('"', '').replace("'", "").strip()
+                        parts = coord_str_clean.split(',')
+                        if len(parts) >= 2:
+                            try:
+                                lat = float(parts[0].strip())
+                                lng = float(parts[1].strip())
+                                # Validate coordinates are reasonable for Africa
+                                if (-40 <= lat <= 40) and (-25 <= lng <= 55):
+                                    dest_coords = f"{lat}, {lng}"
+                                    print(f"Successfully parsed destination coordinates: {dest_coords}")
+                                else:
+                                    print(f"Destination coordinates outside Africa range: {lat}, {lng}")
+                            except ValueError as e:
+                                print(f"Error parsing destination coordinates: {e}")
+                    else:
+                        # Fallback: extract numbers with regex
+                        import re
+                        coord_match = re.findall(r'-?\d+\.?\d*', coord_str)
+                        if len(coord_match) >= 2:
+                            try:
+                                lat = float(coord_match[0])
+                                lng = float(coord_match[1])
+                                if (-40 <= lat <= 40) and (-25 <= lng <= 55):
+                                    dest_coords = f"{lat}, {lng}"
+                                    print(f"Regex parsed destination coordinates: {dest_coords}")
+                            except ValueError as e:
+                                print(f"Error with regex parsing destination coordinates: {e}")
                 
                 dest_country_val = row[dest_country_col] if dest_country_col and not pd.isna(row[dest_country_col]) else None
                 dest_country = str(dest_country_val).strip() if dest_country_val is not None else "Unknown"
