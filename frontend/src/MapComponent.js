@@ -284,7 +284,7 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
         return;
       }
 
-      const speciesColor = speciesColors[translocation.species] || speciesColors['Other'];
+      const speciesColor = getSpeciesColor(translocation.species);
 
       // Source marker (larger, white border)
       const sourceMarker = window.L.circleMarker([sourceLat, sourceLng], {
