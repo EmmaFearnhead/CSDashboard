@@ -97,15 +97,18 @@ async def create_translocation(translocation: TranslocationCreate):
 async def get_translocations(
     species: Optional[Species] = None,
     year: Optional[int] = None,
-    transport_mode: Optional[TransportMode] = None
+    transport: Optional[TransportMode] = None,
+    special_project: Optional[SpecialProject] = None
 ):
     filter_dict = {}
     if species:
         filter_dict["species"] = species
     if year:
         filter_dict["year"] = year
-    if transport_mode:
-        filter_dict["transport_mode"] = transport_mode
+    if transport:
+        filter_dict["transport"] = transport
+    if special_project:
+        filter_dict["special_project"] = special_project
     
     translocations = await db.translocations.find(filter_dict).to_list(1000)
     return [Translocation(**translocation) for translocation in translocations]
@@ -130,6 +133,19 @@ async def delete_translocation(translocation_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Translocation not found")
     return {"message": "Translocation deleted successfully"}
+
+@api_router.put("/translocations/{translocation_id}", response_model=Translocation)
+async def update_translocation(translocation_id: str, translocation: TranslocationCreate):
+    translocation_dict = translocation.dict()
+    result = await db.translocations.update_one(
+        {"id": translocation_id}, 
+        {"$set": translocation_dict}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Translocation not found")
+    
+    updated_translocation = await db.translocations.find_one({"id": translocation_id})
+    return Translocation(**updated_translocation)
 
 @api_router.post("/translocations/sample-data")
 async def create_sample_data():
