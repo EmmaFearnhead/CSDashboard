@@ -214,8 +214,11 @@ const TranslocationForm = ({ onSubmit }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-lg space-y-4">
-      <h3 className="text-xl font-bold mb-4">Add New Translocation</h3>
+    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-lg space-y-4 border-l-4 border-nature-green">
+      <h3 className="text-xl font-bold mb-4 text-forest-dark flex items-center">
+        <span className="text-2xl mr-2">🌿</span>
+        Add New Conservation Record
+      </h3>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
