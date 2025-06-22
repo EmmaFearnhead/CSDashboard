@@ -281,6 +281,17 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
       const [sourceLat, sourceLng] = parseCoordinates(translocation.source_area.coordinates);
       const [destLat, destLng] = parseCoordinates(translocation.recipient_area.coordinates);
 
+      // IMMEDIATE DEBUG - Log what we're actually plotting
+      console.log(`🗺️ PLOTTING: ${translocation.project_title}`);
+      console.log(`   Source: ${translocation.source_area.name} at [${sourceLat}, ${sourceLng}]`);
+      console.log(`   Destination: ${translocation.recipient_area.name} at [${destLat}, ${destLng}]`);
+
+      // Skip if coordinates are invalid (0,0)
+      if ((sourceLat === 0 && sourceLng === 0) || (destLat === 0 && destLng === 0)) {
+        console.warn(`⚠️ Skipping ${translocation.project_title} - invalid coordinates`);
+        return;
+      }
+
       // Skip invalid coordinates
       if (sourceLat === 0 && sourceLng === 0 && destLat === 0 && destLng === 0) {
         return;
