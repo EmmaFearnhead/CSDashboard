@@ -203,7 +203,13 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
   
   // Update markers when filtered data changes
   useEffect(() => {
-    if (!mapRef.current) return;
+    console.log('🗺️ USEEFFECT TRIGGERED with', filteredTranslocations.length, 'translocations');
+    console.log('🗺️ MAP REF EXISTS:', !!mapRef.current);
+    
+    if (!mapRef.current) {
+      console.log('🗺️ NO MAP REF - RETURNING');
+      return;
+    }
     
     // Clear existing markers and lines before adding new ones
     mapRef.current.eachLayer(layer => {
