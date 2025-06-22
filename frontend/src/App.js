@@ -289,11 +289,13 @@ function App() {
 
   const fetchTranslocations = async () => {
     try {
+      console.log('🔄 FETCHING translocations from API...');
       const response = await axios.get(`${API}/translocations`);
+      console.log('✅ FETCHED translocations:', response.data.length, 'records');
       setTranslocations(response.data);
       setFilteredTranslocations(response.data);
     } catch (error) {
-      console.error('Error fetching translocations:', error);
+      console.error('❌ Error fetching translocations:', error);
     }
   };
 
