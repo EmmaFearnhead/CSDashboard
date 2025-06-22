@@ -832,7 +832,7 @@ function App() {
             <div className="flex gap-2">
               {translocations.length === 0 && (
                 <button
-                  onClick={createSampleData}
+                  onClick={importHistoricalData}
                   className="bg-forest-green text-white px-4 py-2 rounded-md hover:bg-forest-dark transition-colors shadow-md"
                 >
                   Load Sample Data
