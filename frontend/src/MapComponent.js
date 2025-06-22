@@ -38,11 +38,16 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
     const initializeMap = async () => {
       await loadLeafletResources();
       
+      console.log('🗺️ INITIALIZING MAP...');
+      
       if (mapRef.current) {
+        console.log('🗺️ MAP ALREADY EXISTS - REMOVING');
         mapRef.current.remove();
         mapRef.current = null;
       }
 
+      console.log('🗺️ CREATING NEW MAP...');
+      
       // Create map centered on South Africa with enhanced zoom controls
       mapRef.current = window.L.map('map', {
         zoomControl: true,
@@ -58,6 +63,8 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
         maxZoom: 18,
         minZoom: 2
       }).setView([-25, 28], 5);
+
+      console.log('🗺️ MAP CREATED:', !!mapRef.current);
 
       // Add enhanced zoom control with additional buttons
       const zoomControl = window.L.control.zoom({
