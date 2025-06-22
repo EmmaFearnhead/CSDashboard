@@ -383,6 +383,12 @@ async def import_excel_file(file: UploadFile = File(...)):
                 species = categorize_species(original_species, additional_info)
                 print(f"Original species: {original_species} -> Categorized: {species}")
                 
+                # Validate species is one of our enum values
+                valid_species = ["Elephant", "Black Rhino", "White Rhino", "Plains Game Species", "Other"]
+                if species not in valid_species:
+                    print(f"WARNING: Invalid species '{species}', defaulting to 'Other'")
+                    species = "Other"
+                
                 # Source area
                 source_name_val = row[found_columns.get('source_name', '')]
                 source_name = str(source_name_val) if not pd.isna(source_name_val) else "Unknown Source"
