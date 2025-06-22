@@ -767,12 +767,19 @@ const FileUploadComponent = ({ onFileUpload, loading, onCancel }) => {
   );
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-lg border-l-4 border-nature-green">
-      <h3 className="text-xl font-bold mb-4 text-forest-dark">Upload Excel Data File</h3>
+    <div className="bg-white p-8 rounded-lg shadow-xl border-l-4 border-nature-green">
+      <div className="text-center mb-6">
+        <h3 className="text-2xl font-bold text-forest-dark mb-2">🗂️ Upload Your Excel Data</h3>
+        <p className="text-nature-brown">Import your corrected conservation data with updated locations and coordinates</p>
+      </div>
       
       <div 
-        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-          dragOver ? 'border-nature-green bg-nature-light' : 'border-sage-green'
+        className={`border-2 border-dashed rounded-lg p-12 text-center transition-all duration-300 ${
+          dragOver 
+            ? 'border-nature-green bg-nature-light transform scale-105' 
+            : selectedFile
+            ? 'border-forest-green bg-green-50'
+            : 'border-sage-green hover:border-nature-green hover:bg-nature-light'
         }`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -780,30 +787,39 @@ const FileUploadComponent = ({ onFileUpload, loading, onCancel }) => {
       >
         {selectedFile ? (
           <div className="space-y-4">
-            <div className="text-lg font-medium text-forest-dark">Selected File:</div>
-            <div className="bg-nature-light p-3 rounded-md">
-              <div className="font-medium">{selectedFile.name}</div>
-              <div className="text-sm text-nature-brown">
-                Size: {(selectedFile.size / 1024).toFixed(1)} KB
-              </div>
-              <div className="text-sm text-nature-brown">
-                Type: {selectedFile.type || 'Unknown'}
+            <div className="text-6xl">✅</div>
+            <div className="text-xl font-bold text-forest-dark">File Selected Successfully!</div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-green-200">
+              <div className="text-lg font-semibold text-forest-dark">{selectedFile.name}</div>
+              <div className="text-sm text-nature-brown mt-1">
+                Size: {(selectedFile.size / 1024).toFixed(1)} KB | Type: {selectedFile.type || 'Excel/CSV'}
               </div>
             </div>
             {!isValidFile && (
-              <div className="text-red-600 text-sm">
-                ⚠️ Please select an Excel (.xlsx, .xls) or CSV (.csv) file
+              <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg">
+                <div className="flex items-center">
+                  <span className="text-2xl mr-2">⚠️</span>
+                  <div>
+                    <strong>Invalid File Type</strong>
+                    <p className="text-sm">Please select an Excel (.xlsx, .xls) or CSV (.csv) file</p>
+                  </div>
+                </div>
               </div>
             )}
           </div>
         ) : (
-          <div className="space-y-4">
-            <div className="text-6xl text-sage-green">📁</div>
-            <div className="text-lg font-medium text-forest-dark">
-              Drop your Excel file here or click to browse
-            </div>
-            <div className="text-sm text-nature-brown">
-              Supports: Excel (.xlsx, .xls) and CSV (.csv) files
+          <div className="space-y-6">
+            <div className="text-8xl text-nature-green">📊</div>
+            <div>
+              <div className="text-xl font-bold text-forest-dark mb-2">
+                Drag & Drop Your Excel File Here
+              </div>
+              <div className="text-nature-brown mb-4">
+                or click below to browse and select your file
+              </div>
+              <div className="text-sm text-sage-green">
+                Supports: Excel (.xlsx, .xls) and CSV (.csv) files up to 10MB
+              </div>
             </div>
           </div>
         )}
@@ -819,47 +835,61 @@ const FileUploadComponent = ({ onFileUpload, loading, onCancel }) => {
         {!selectedFile && (
           <label
             htmlFor="file-upload"
-            className="inline-block mt-4 bg-nature-green text-white px-6 py-3 rounded-md hover:bg-forest-green transition-colors cursor-pointer shadow-md"
+            className="inline-block mt-6 bg-gradient-to-r from-nature-green to-forest-green text-white px-8 py-4 rounded-lg hover:from-forest-green hover:to-forest-dark transition-all duration-300 cursor-pointer shadow-lg transform hover:scale-105 font-semibold"
           >
-            Choose File
+            📁 Choose Your Excel File
           </label>
         )}
       </div>
 
-      <div className="mt-6 space-y-3">
-        <div className="text-sm text-nature-brown">
-          <strong>Expected columns:</strong> Project Title, Year, Species, Number, Source Area: Name, Source Area: Co-Ordinates, 
-          Source Area: Country, Recipient Area: Name, Recipient Area: Co-Ordinates, Recipient Area: Country, Transport, Special Project, Additional Info
+      <div className="mt-8 space-y-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 className="font-semibold text-blue-800 mb-2">📋 Expected Column Structure:</h4>
+          <div className="text-sm text-blue-700 space-y-1">
+            <div><strong>Required:</strong> Project Title, Year, Species, Number</div>
+            <div><strong>Location Data:</strong> Source Area: Name, Source Area: Co-Ordinates, Source Area: Country</div>
+            <div><strong>Destination:</strong> Recipient Area: Name, Recipient Area: Co-Ordinates, Recipient Area: Country</div>
+            <div><strong>Additional:</strong> Transport, Special Project, Additional Info</div>
+          </div>
         </div>
         
-        <div className="flex gap-3">
+        <div className="flex gap-4">
           <button
             onClick={handleUpload}
             disabled={!isValidFile || loading}
-            className={`flex-1 py-3 px-4 rounded-md font-semibold transition-colors shadow-md ${
+            className={`flex-1 py-4 px-6 rounded-lg font-bold text-lg transition-all duration-300 shadow-lg ${
               isValidFile && !loading
-                ? 'bg-nature-green text-white hover:bg-forest-green'
+                ? 'bg-gradient-to-r from-nature-green to-forest-green text-white hover:from-forest-green hover:to-forest-dark transform hover:scale-105'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
-            {loading ? 'Uploading...' : 'Upload & Import Data'}
+            {loading ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Processing...
+              </div>
+            ) : (
+              '🚀 Import Data'
+            )}
           </button>
           
           <button
             onClick={onCancel}
-            className="px-6 py-3 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+            className="px-8 py-4 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-semibold"
           >
             Cancel
           </button>
         </div>
         
-        {selectedFile && (
-          <button
-            onClick={() => setSelectedFile(null)}
-            className="text-sm text-nature-brown hover:text-forest-dark"
-          >
-            Choose different file
-          </button>
+        {selectedFile && !loading && (
+          <div className="text-center">
+            <button
+              onClick={() => setSelectedFile(null)}
+              className="text-nature-brown hover:text-forest-dark transition-colors underline"
+            >
+              Choose a different file
+            </button>
+          </div>
         )}
       </div>
     </div>
