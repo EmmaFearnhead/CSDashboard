@@ -878,7 +878,7 @@ function App() {
                     <div className="text-nature-brown text-sm mb-4">Load sample data to see conservation efforts across Africa</div>
                     {translocations.length === 0 && (
                       <button
-                        onClick={createSampleData}
+                        onClick={importHistoricalData}
                         className="bg-forest-green text-white px-6 py-3 rounded-md hover:bg-forest-dark transition-colors shadow-md"
                       >
                         🌍 Load Sample Data
