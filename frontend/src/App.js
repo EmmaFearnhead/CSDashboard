@@ -226,7 +226,7 @@ const TranslocationForm = ({ onSubmit }) => {
           <select
             value={formData.species}
             onChange={(e) => setFormData({...formData, species: e.target.value})}
-            className="w-full border rounded-md px-3 py-2"
+            className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
             required
           >
             <option value="elephant">Elephant</option>
