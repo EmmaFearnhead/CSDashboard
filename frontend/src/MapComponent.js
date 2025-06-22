@@ -216,6 +216,9 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
       }
     });
     
+    console.log(`🗺️ MAP DEBUG: Processing ${filteredTranslocations.length} translocations`);
+    console.log('🗺️ MAP DEBUG: Sample translocation:', filteredTranslocations[0]);
+    
     // Species colors for simplified categorization - GREEN CONSERVATION THEME
     const speciesColors = {
       'Elephant': '#228B22',           // Forest Green
