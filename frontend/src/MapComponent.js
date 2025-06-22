@@ -222,7 +222,20 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
       'Black Rhino': '#006400',       // Dark Green  
       'White Rhino': '#90EE90',       // Light Green
       'Plains Game Species': '#32CD32', // Lime Green
-      'Other': '#8FBC8F'              // Dark Sea Green
+      'Lion': '#8FBC8F',              // Dark Sea Green
+      'Buffalo': '#9ACD32',           // Yellow Green
+      'Hippo': '#6B8E23',             // Olive Drab
+      'Giraffe': '#228B22',           // Forest Green
+      'Zebra': '#32CD32',             // Lime Green
+      'Kudu': '#8FBC8F',              // Dark Sea Green
+      'Sable': '#006400',             // Dark Green
+      'Impala': '#90EE90',            // Light Green
+      'Waterbuck': '#9ACD32',         // Yellow Green
+      'Unknown': '#696969'            // Dim Gray
+    };
+
+    const getSpeciesColor = (species) => {
+      return speciesColors[species] || '#228B22'; // Default to Forest Green
     };
 
     // Transport mode icons
