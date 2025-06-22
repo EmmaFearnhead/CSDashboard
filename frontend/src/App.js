@@ -522,8 +522,26 @@ function App() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">🌍 Wildlife Conservation Dashboard</h1>
-          <p className="text-xl text-gray-600">Tracking Wildlife Translocations Across Africa</p>
+          <div className="flex items-center justify-center mb-4">
+            <div className="logo-container mr-4">
+              {/* Replace this placeholder with your actual logo */}
+              <img 
+                src="/api/placeholder/120/80" 
+                alt="Conservation Company Logo" 
+                className="h-20 w-auto object-contain"
+                onError={(e) => {
+                  // Fallback to nature emoji if logo fails to load
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'block';
+                }}
+              />
+              <div className="text-6xl text-forest-green hidden">🌿</div>
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold text-forest-dark mb-2">Wildlife Conservation Dashboard</h1>
+              <p className="text-xl text-nature-brown">Tracking Wildlife Translocations Across Africa</p>
+            </div>
+          </div>
         </div>
 
         {/* Controls */}
