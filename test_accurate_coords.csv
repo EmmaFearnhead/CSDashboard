@@ -1,0 +1,3 @@
+Project Title,Year,Species,Number,Source Area: Name,Source Area: Co-Ordinates,Source Area: Country,Recipient Area: Name,Recipient Area: Co-Ordinates,Recipient Area: Country,Transport,Special Project,Additional Info
+Accurate Test Project,2024,White Rhino,15,Exact Source Location Name,"-28.123456789, 31.987654321",South Africa,Exact Destination Name,"-25.555555555, 30.123456789",Botswana,Road,African Parks,Testing backend coordinate precision
+Another Accurate Test,2023,Black Rhino,8,Another Exact Source,"-24.987654321, 29.111111111",South Africa,Another Exact Destination,"-23.222222222, 32.333333333",Namibia,Air,Peace Parks,Testing multiple coordinate formats
