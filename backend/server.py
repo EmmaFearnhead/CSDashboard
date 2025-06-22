@@ -312,24 +312,36 @@ async def import_excel_file(file: UploadFile = File(...)):
                 source_coords = "0, 0"
                 if source_coord_col and not pd.isna(row[source_coord_col]):
                     coord_str = str(row[source_coord_col]).strip()
-                    print(f"Raw source coordinates: '{coord_str}'")
+                    print(f"Backend processing source coordinates: '{coord_str}'")
                     
-                    # Handle Google Maps format: "-27.808400634565363, 32.34692072433984" (with or without quotes)
+                    # Handle Google Maps format exactly: "-27.808400634565363, 32.34692072433984"
+                    # Remove all quotes but preserve the exact decimal precision
                     coord_clean = coord_str.replace('"', '').replace("'", '').replace('°', '').strip()
                     
                     if ',' in coord_clean:
                         try:
                             parts = coord_clean.split(',')
-                            lat = float(parts[0].strip())
-                            lng = float(parts[1].strip())
+                            lat_str = parts[0].strip()
+                            lng_str = parts[1].strip()
                             
+                            # Parse as float but maintain precision when converting back to string
+                            lat = float(lat_str)
+                            lng = float(lng_str)
+                            
+                            # Validate coordinates are reasonable for Africa
                             if (-40 <= lat <= 40) and (-25 <= lng <= 55):
+                                # Store with original precision maintained
                                 source_coords = f"{lat}, {lng}"
-                                print(f"✅ Parsed source: {source_coords}")
+                                print(f"✅ Stored source coordinates: {source_coords}")
                             else:
-                                print(f"❌ Source coords outside Africa: {lat}, {lng}")
-                        except:
-                            print(f"❌ Failed to parse source: {coord_clean}")
+                                print(f"❌ Source coordinates outside Africa: {lat}, {lng}")
+                                source_coords = "0, 0"
+                        except ValueError as e:
+                            print(f"❌ Failed to parse source coordinates: {e}")
+                            source_coords = "0, 0"
+                    else:
+                        print(f"❌ No comma found in source coordinates: {coord_clean}")
+                        source_coords = "0, 0"
                 
                 source_country_val = row[source_country_col] if source_country_col and not pd.isna(row[source_country_col]) else None
                 source_country = str(source_country_val).strip() if source_country_val is not None else "Unknown"
