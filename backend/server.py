@@ -197,7 +197,7 @@ async def import_simplified_data():
 
 @api_router.post("/translocations/import-excel-file")
 async def import_excel_file(file: UploadFile = File(...)):
-    """Import translocation data from Excel or CSV file upload"""
+    """Import translocation data from Excel or CSV file upload - ROBUST VERSION"""
     
     def validate_coordinates(coord_string):
         """Validate and format coordinates for Google Maps format"""
