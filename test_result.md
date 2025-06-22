@@ -136,9 +136,9 @@ backend:
         comment: "Sample data creation working perfectly. Creates realistic African wildlife translocation data with proper coordinates."
 
 frontend:
-  - task: "Google Maps integration with translocation visualization"
+  - task: "OpenStreetMap integration with translocation visualization"
     implemented: true
-    working: "partial"
+    working: true
     file: "App.js"
     stuck_count: 0
     priority: "high"
@@ -150,6 +150,9 @@ frontend:
       - working: "partial"
         agent: "testing"
         comment: "Map integration works but shows BillingNotEnabledMapError - Google Maps API key needs billing enabled. Core functionality working."
+      - working: true
+        agent: "testing"
+        comment: "Successfully migrated from Google Maps to OpenStreetMap with Leaflet. Map loads correctly with Africa-centered view. No Google Maps API errors or billing issues. Map container initializes properly with Leaflet controls."
 
   - task: "Translocation form for adding new records"
     implemented: true
