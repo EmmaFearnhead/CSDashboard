@@ -164,6 +164,7 @@ async def import_excel_file(file: UploadFile = File(...)):
             for pattern in patterns:
                 for col in df.columns:
                     if pattern.lower() in str(col).lower():
+                        print(f"  Matched '{pattern}' to column '{col}'")
                         return col
             return None
         
