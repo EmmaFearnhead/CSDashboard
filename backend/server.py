@@ -678,11 +678,7 @@ async def import_excel_file(file: UploadFile = File(...)):
     
     return {"message": f"Imported {len(created_translocations)} complete historical translocations with simplified species categorization", "translocations": created_translocations}
 
-@api_router.post("/translocations/import-complete-excel-data")
-async def import_complete_excel_data():
-    """Import ALL historical translocation data from Excel file"""
-    
-    # Clear existing data
+
     await db.translocations.delete_many({})
     
     # Complete dataset from Excel file with corrected coordinates
