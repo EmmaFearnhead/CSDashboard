@@ -367,7 +367,7 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
     }
   }, [filteredTranslocations]);
 
-  return <div id="map" className="w-full h-96 rounded-lg shadow-lg"></div>;
+  return <div id="map" className="w-full h-[32rem] rounded-lg shadow-lg"></div>;
 };
 
 export default MapComponent;
