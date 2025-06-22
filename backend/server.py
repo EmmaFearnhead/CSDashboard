@@ -306,9 +306,20 @@ async def import_excel_file(file: UploadFile = File(...)):
             if field not in found_columns:
                 # If critical columns are missing, raise error
                 if field in ['project_title', 'year', 'species', 'number_of_animals']:
+                    print(f"CRITICAL: Missing required column '{field}'. Available columns: {list(df.columns)}")
                     raise HTTPException(status_code=400, detail=f"Required column not found: {field}. Available columns: {list(df.columns)}")
+                else:
+                    print(f"WARNING: Optional column '{field}' not found. Available columns: {list(df.columns)}")
         
         print(f"Column mapping: {found_columns}")
+        
+        # Validate that we have the minimum required columns
+        required_fields = ['project_title', 'year', 'species', 'number_of_animals']
+        missing_fields = [field for field in required_fields if field not in found_columns]
+        if missing_fields:
+            error_msg = f"Missing required columns: {missing_fields}. Available columns: {list(df.columns)}"
+            print(f"CRITICAL ERROR: {error_msg}")
+            raise HTTPException(status_code=400, detail=error_msg)
         
         # Process each row
         created_translocations = []
