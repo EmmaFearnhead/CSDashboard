@@ -528,6 +528,17 @@ function App() {
           </div>
         </div>
 
+        {/* File Upload */}
+        {showFileUpload && (
+          <div className="mb-6">
+            <FileUploadComponent 
+              onFileUpload={importExcelFile}
+              loading={uploadLoading}
+              onCancel={() => setShowFileUpload(false)}
+            />
+          </div>
+        )}
+
         {/* Data Table */}
         {showDataTable && (
           <div className="mb-6">
