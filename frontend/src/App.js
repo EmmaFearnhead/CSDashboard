@@ -289,7 +289,7 @@ const TranslocationForm = ({ onSubmit }) => {
             placeholder="Reserve Name *"
             value={formData.source_reserve.name}
             onChange={(e) => setFormData({...formData, source_reserve: {...formData.source_reserve, name: e.target.value}})}
-            className="w-full border rounded-md px-3 py-2"
+            className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
             required
           />
           <input
@@ -297,7 +297,7 @@ const TranslocationForm = ({ onSubmit }) => {
             placeholder="Country *"
             value={formData.source_reserve.country}
             onChange={(e) => setFormData({...formData, source_reserve: {...formData.source_reserve, country: e.target.value}})}
-            className="w-full border rounded-md px-3 py-2"
+            className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
             required
           />
           <input
@@ -306,7 +306,7 @@ const TranslocationForm = ({ onSubmit }) => {
             placeholder="Latitude *"
             value={formData.source_reserve.latitude}
             onChange={(e) => setFormData({...formData, source_reserve: {...formData.source_reserve, latitude: e.target.value}})}
-            className="w-full border rounded-md px-3 py-2"
+            className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
             required
           />
           <input
@@ -315,7 +315,7 @@ const TranslocationForm = ({ onSubmit }) => {
             placeholder="Longitude *"
             value={formData.source_reserve.longitude}
             onChange={(e) => setFormData({...formData, source_reserve: {...formData.source_reserve, longitude: e.target.value}})}
-            className="w-full border rounded-md px-3 py-2"
+            className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
             required
           />
         </div>
