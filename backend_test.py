@@ -6,7 +6,7 @@ from datetime import datetime
 import uuid
 
 # Get the backend URL from the frontend .env file
-BACKEND_URL = "https://37ac102f-355e-47cc-bda4-c15f9d8e9667.preview.emergentagent.com"
+BACKEND_URL = "https://16a5d91b-fe8d-4657-b2a4-00610c454aa5.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 def print_separator():
