@@ -215,6 +215,18 @@ test_plan:
   test_all: false
   test_priority: "high_first"
 
+  - task: "Simplified species categorization API endpoint"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Created and tested the new simplified species categorization API endpoint. The endpoint /api/translocations/import-simplified-data works correctly, implementing the new categorization system with 5 categories: Elephant, Black Rhino, White Rhino, Plains Game Species, and Other. The statistics show the correct counts with Plains Game Species having the highest count (3,442 animals) and Elephant having the second highest (1,101 animals). The additional_info field contains proper species breakdowns for Plains Game Species entries, and single species entries are properly categorized as 'Other' with primary species noted."
+
 agent_communication:
   - agent: "main"
     message: "Built complete wildlife conservation dashboard with Google Maps integration. Backend includes data models for translocations with African reserve coordinates, filtering, statistics. Frontend has interactive map with markers, routes, form for adding records, and filtering capabilities. Ready to test backend endpoints first, then frontend if needed."
@@ -236,3 +248,5 @@ agent_communication:
     message: "Successfully tested the complete historical data import functionality. After directly calling the API endpoint `/api/translocations/import-complete-excel-data`, the system now shows 49 records spanning from 2016 to 2025, which meets the requirement for 40+ records. The statistics panel now displays a more comprehensive dataset with 9 different species: Elephant (1101 animals across 21 translocations), Kudu (40 animals across 1 translocation), Buffalo (3329 animals across 8 translocations), Impala (221 animals across 1 translocation), Black Rhino (77 animals across 7 translocations), White Rhino (186 animals across 6 translocations), Sable (428 animals across 2 translocations), Lion (7 animals across 1 translocation), and Zebra (104 animals across 2 translocations). The map displays markers correctly positioned within Africa, showing the proper coordinates. The filtering functionality works as expected, allowing users to filter by species, year (including future projects in 2025), and special projects like Peace Parks and African Parks. Despite some Leaflet JavaScript errors related to loading OpenStreetMap tiles, the map functionality works correctly with markers and routes displayed on the blue background."
   - agent: "testing"
     message: "Completed comprehensive testing of the Conservation Solutions Translocation Dashboard backend API. All endpoints are working correctly as required. The health check endpoint `/api/` returns the expected response. The get all translocations endpoint `/api/translocations` successfully retrieves all 49 records with proper data structure. The import historical data endpoint `/api/translocations/import-complete-excel-data` correctly imports the complete dataset spanning from 2016 to 2025 with 9 different species. The statistics endpoint `/api/translocations/stats` shows accurate counts with Buffalo having the largest count (3329 animals) and Elephant having the second largest (1101 animals). CRUD operations (create, update, delete) work correctly for translocation records. Filtering functionality works properly for species, year, transport mode, and special projects. The backend API fully meets all the requirements specified in the review request."
+  - agent: "testing"
+    message: "Successfully tested the new simplified species categorization API endpoint. The endpoint `/api/translocations/import-simplified-data` works correctly, implementing the new categorization system with 5 categories: Elephant, Black Rhino, White Rhino, Plains Game Species, and Other. The statistics show the correct counts with Plains Game Species having the highest count (3,442 animals) and Elephant having the second highest (1,101 animals). Other species have 687 animals, White Rhino has 186 animals, and Black Rhino has 77 animals. The additional_info field contains proper species breakdowns for Plains Game Species entries, and single species entries are properly categorized as 'Other' with primary species noted. All tests pass successfully, confirming that the simplified categorization system is working as expected."
