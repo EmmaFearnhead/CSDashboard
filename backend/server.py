@@ -8,7 +8,6 @@ import traceback
 from datetime import datetime
 from typing import List, Optional
 from enum import Enum
-from math import isnan
 
 # FastAPI and Database
 from fastapi import FastAPI, APIRouter, HTTPException, File, UploadFile
