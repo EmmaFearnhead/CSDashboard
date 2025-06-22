@@ -412,9 +412,170 @@ async def import_simplified_data():
     
     return {"message": f"Imported {len(created_translocations)} translocations with simplified species categorization", "translocations": created_translocations}
 
-@api_router.post("/translocations/import-complete-excel-data")
-async def import_complete_excel_data():
-    """Import ALL historical translocation data from Excel file with simplified species categorization"""
+@api_router.post("/translocations/import-excel-file")
+async def import_excel_file(file: UploadFile = File(...)):
+    """Import translocation data from Excel or CSV file upload"""
+    
+    try:
+        # Clear existing data
+        await db.translocations.delete_many({})
+        
+        # Read file content
+        content = await file.read()
+        
+        # Determine file type and read accordingly
+        if file.filename.endswith('.xlsx') or file.filename.endswith('.xls'):
+            # Read Excel file
+            df = pd.read_excel(io.BytesIO(content))
+        elif file.filename.endswith('.csv'):
+            # Read CSV file
+            df = pd.read_csv(io.BytesIO(content))
+        else:
+            raise HTTPException(status_code=400, detail="File must be Excel (.xlsx, .xls) or CSV (.csv)")
+        
+        # Helper function to categorize species
+        def categorize_species(original_species, additional_info=""):
+            if pd.isna(original_species):
+                return "Other"
+                
+            species_str = str(original_species).strip()
+            additional_str = str(additional_info) if not pd.isna(additional_info) else ""
+            
+            # Direct mapping for primary species
+            if "elephant" in species_str.lower():
+                return "Elephant"
+            elif "black rhino" in species_str.lower():
+                return "Black Rhino"
+            elif "white rhino" in species_str.lower():
+                return "White Rhino"
+            elif "plains game" in species_str.lower():
+                return "Plains Game Species"
+            else:
+                # Check if this is a multi-species entry based on additional info
+                multi_species_keywords = ["buffalo", "impala", "sable", "kudu", "warthog", "waterbuck", "eland", "zebra", "hartebeest", "reedbuck", "oryx"]
+                species_count = sum(1 for keyword in multi_species_keywords if keyword.lower() in additional_str.lower())
+                
+                # If additional_info mentions multiple species or has separators, it's Plains Game
+                if species_count >= 2 or ";" in additional_str or ("," in additional_str and any(keyword in additional_str.lower() for keyword in multi_species_keywords)):
+                    return "Plains Game Species"
+                else:
+                    return "Other"
+        
+        # Column mapping - handle different possible column names
+        column_mapping = {
+            'project_title': ['Project Title', 'project_title', 'Project', 'Title'],
+            'year': ['Year', 'year'],
+            'species': ['Species', 'species'],
+            'number_of_animals': ['Number', 'number', 'Number of Animals', 'Animals', 'Count'],
+            'source_name': ['Source Area: Name', 'Source Name', 'Source Area Name', 'source_name'],
+            'source_coordinates': ['Source Area: Co-Ordinates', 'Source Coordinates', 'Source Area Coordinates', 'source_coordinates'],
+            'source_country': ['Source Area: Country', 'Source Country', 'Source Area Country', 'source_country'],
+            'recipient_name': ['Recipient Area: Name', 'Recipient Name', 'Recipient Area Name', 'recipient_name'],
+            'recipient_coordinates': ['Recipient Area: Co-Ordinates', 'Recipient Coordinates', 'Recipient Area Coordinates', 'recipient_coordinates'],
+            'recipient_country': ['Recipient Area: Country', 'Recipient Country', 'Recipient Area Country', 'recipient_country'],
+            'transport': ['Transport', 'transport'],
+            'special_project': ['Special Project', 'special_project', 'Special'],
+            'additional_info': ['Additional Info', 'additional_info', 'Notes', 'Additional Information']
+        }
+        
+        # Find the correct column names
+        found_columns = {}
+        for field, possible_names in column_mapping.items():
+            for col_name in possible_names:
+                if col_name in df.columns:
+                    found_columns[field] = col_name
+                    break
+            if field not in found_columns:
+                # If critical columns are missing, raise error
+                if field in ['project_title', 'year', 'species', 'number_of_animals']:
+                    raise HTTPException(status_code=400, detail=f"Required column not found: {field}. Available columns: {list(df.columns)}")
+        
+        # Process each row
+        created_translocations = []
+        for index, row in df.iterrows():
+            try:
+                # Extract data with proper error handling
+                project_title = str(row[found_columns['project_title']]) if not pd.isna(row[found_columns['project_title']]) else f"Project {index+1}"
+                year = int(row[found_columns['year']]) if not pd.isna(row[found_columns['year']]) else 2024
+                
+                # Handle number of animals
+                number_str = str(row[found_columns['number_of_animals']])
+                if pd.isna(row[found_columns['number_of_animals']]) or number_str.lower() in ['nan', '']:
+                    number_of_animals = 1
+                else:
+                    try:
+                        number_of_animals = int(float(number_str))
+                    except:
+                        number_of_animals = 1
+                
+                # Get additional info first for species categorization
+                additional_info = str(row[found_columns.get('additional_info', 'Additional Info')]) if found_columns.get('additional_info') and not pd.isna(row[found_columns.get('additional_info', 'Additional Info')]) else ""
+                
+                # Categorize species
+                original_species = row[found_columns['species']] if not pd.isna(row[found_columns['species']]) else ""
+                species = categorize_species(original_species, additional_info)
+                
+                # Source area
+                source_name = str(row[found_columns.get('source_name', 'Source Area: Name')]) if found_columns.get('source_name') and not pd.isna(row[found_columns.get('source_name', 'Source Area: Name')]) else "Unknown Source"
+                source_coordinates = str(row[found_columns.get('source_coordinates', 'Source Area: Co-Ordinates')]) if found_columns.get('source_coordinates') and not pd.isna(row[found_columns.get('source_coordinates', 'Source Area: Co-Ordinates')]) else "0, 0"
+                source_country = str(row[found_columns.get('source_country', 'Source Area: Country')]) if found_columns.get('source_country') and not pd.isna(row[found_columns.get('source_country', 'Source Area: Country')]) else "Unknown"
+                
+                # Recipient area
+                recipient_name = str(row[found_columns.get('recipient_name', 'Recipient Area: Name')]) if found_columns.get('recipient_name') and not pd.isna(row[found_columns.get('recipient_name', 'Recipient Area: Name')]) else "Unknown Recipient"
+                recipient_coordinates = str(row[found_columns.get('recipient_coordinates', 'Recipient Area: Co-Ordinates')]) if found_columns.get('recipient_coordinates') and not pd.isna(row[found_columns.get('recipient_coordinates', 'Recipient Area: Co-Ordinates')]) else "0, 0"
+                recipient_country = str(row[found_columns.get('recipient_country', 'Recipient Area: Country')]) if found_columns.get('recipient_country') and not pd.isna(row[found_columns.get('recipient_country', 'Recipient Area: Country')]) else "Unknown"
+                
+                # Transport and special project
+                transport = str(row[found_columns.get('transport', 'Transport')]) if found_columns.get('transport') and not pd.isna(row[found_columns.get('transport', 'Transport')]) else "Road"
+                special_project = str(row[found_columns.get('special_project', 'Special Project')]) if found_columns.get('special_project') and not pd.isna(row[found_columns.get('special_project', 'Special Project')]) else ""
+                
+                # Clean up special_project and transport values
+                if special_project.lower() in ['nan', 'none', '']:
+                    special_project = ""
+                if transport.lower() not in ['road', 'air']:
+                    transport = "Road"
+                
+                # Create translocation record
+                translocation_data = {
+                    "project_title": project_title,
+                    "year": year,
+                    "species": species,
+                    "number_of_animals": number_of_animals,
+                    "source_area": {
+                        "name": source_name,
+                        "coordinates": source_coordinates,
+                        "country": source_country
+                    },
+                    "recipient_area": {
+                        "name": recipient_name,
+                        "coordinates": recipient_coordinates,
+                        "country": recipient_country
+                    },
+                    "transport": transport,
+                    "special_project": special_project,
+                    "additional_info": additional_info if additional_info != 'nan' else ""
+                }
+                
+                translocation_obj = Translocation(**translocation_data)
+                await db.translocations.insert_one(translocation_obj.dict())
+                created_translocations.append(translocation_obj)
+                
+            except Exception as row_error:
+                print(f"Error processing row {index+1}: {row_error}")
+                continue  # Skip problematic rows but continue processing
+        
+        return {
+            "message": f"Successfully imported {len(created_translocations)} translocations from {file.filename}",
+            "total_rows_processed": len(df),
+            "successful_imports": len(created_translocations),
+            "species_summary": {
+                species: len([t for t in created_translocations if t.species == species])
+                for species in ["Elephant", "Black Rhino", "White Rhino", "Plains Game Species", "Other"]
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
     
     # Clear existing data
     await db.translocations.delete_many({})
