@@ -545,7 +545,7 @@ function App() {
             <div className="bg-gradient-to-r from-nature-green to-forest-green p-4 rounded-lg shadow-lg border-l-4 border-forest-dark">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-white mb-1">📊 Update Your Data</h3>
+                  <h3 className="text-lg font-bold text-white mb-1">Update Your Data</h3>
                   <p className="text-green-100 text-sm">Upload your corrected Excel file to update locations and coordinates</p>
                 </div>
                 <button
