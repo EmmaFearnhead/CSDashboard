@@ -43,7 +43,7 @@ const loadLeafletResources = () => {
 
 const Map = ({ translocations, filteredTranslocations }) => {
   // Use a ref to store the map instance
-  const mapRef = React.useRef(null);
+  const mapRef = useRef(null);
   
   // Initialize map only once
   useEffect(() => {
