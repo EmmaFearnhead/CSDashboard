@@ -403,6 +403,111 @@ def test_import_simplified_data():
         print(f"❌ Import simplified data test failed: {str(e)}")
         return False
 
+def test_excel_file_upload():
+    """Test uploading Excel/CSV file with translocation data"""
+    print("Testing Excel/CSV file upload endpoint (POST /api/translocations/import-excel-file)...")
+    
+    try:
+        # Create a sample CSV file with translocation data
+        csv_content = """Project Title,Year,Species,Number of Animals,Source Area: Name,Source Area: Co-Ordinates,Source Area: Country,Recipient Area: Name,Recipient Area: Co-Ordinates,Recipient Area: Country,Transport,Special Project,Additional Info
+Test Elephant Move,2024,Elephant,25,Kruger National Park,-24.9947,31.5969,Addo Elephant Park,-33.4833,25.7500,Road,Peace Parks,Conservation relocation
+Test Black Rhino,2024,Black Rhino,5,Hluhluwe-iMfolozi Park,-28.2167,31.9500,Akagera National Park,-1.8794,30.7963,Air,African Parks,Breeding program
+Test Plains Game,2024,Plains Game,120,Serengeti National Park,-2.3333,34.8333,Ngorongoro Conservation Area,-3.2000,35.5000,Road,,Buffalo (45); Impala (35); Zebra (40)
+Test White Rhino,2024,White Rhino,8,Kruger National Park,-24.9947,31.5969,Limpopo National Park,-23.9400,31.8700,Road,Peace Parks,
+Test Lion Pride,2024,Lion,12,Serengeti National Park,-2.3333,34.8333,Ruaha National Park,-7.4833,34.6167,Air,,Pride relocation"""
+        
+        # Create a temporary CSV file
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix='.csv', delete=False) as temp_file:
+            temp_file.write(csv_content.encode('utf-8'))
+            temp_file_path = temp_file.name
+        
+        # Upload the CSV file
+        with open(temp_file_path, 'rb') as file:
+            response = requests.post(
+                f"{API_URL}/translocations/import-excel-file",
+                files={'file': ('test_translocations.csv', file, 'text/csv')}
+            )
+        
+        print(f"Status Code: {response.status_code}")
+        print(f"Response: {json.dumps(response.json(), indent=2)}")
+        
+        assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
+        result = response.json()
+        
+        assert "message" in result, "Response should contain 'message' field"
+        assert "successful_imports" in result, "Response should contain 'successful_imports' field"
+        assert "species_summary" in result, "Response should contain 'species_summary' field"
+        
+        # Verify the number of successful imports
+        assert result["successful_imports"] >= 4, f"Expected at least 4 successful imports, got {result['successful_imports']}"
+        
+        # Verify species categorization
+        species_summary = result["species_summary"]
+        assert "Elephant" in species_summary, "Elephant should be in the species summary"
+        assert "Black Rhino" in species_summary, "Black Rhino should be in the species summary"
+        assert "White Rhino" in species_summary, "White Rhino should be in the species summary"
+        assert "Plains Game Species" in species_summary, "Plains Game Species should be in the species summary"
+        assert "Other" in species_summary, "Other should be in the species summary"
+        
+        # Verify the data was imported correctly by checking the stats
+        stats_response = requests.get(f"{API_URL}/translocations/stats")
+        assert stats_response.status_code == 200, f"Expected status code 200 for stats, got {stats_response.status_code}"
+        stats = stats_response.json()
+        
+        # Check that our uploaded species are in the stats
+        assert "Elephant" in stats, "Elephant should be in the statistics"
+        assert "Black Rhino" in stats, "Black Rhino should be in the statistics"
+        assert "White Rhino" in stats, "White Rhino should be in the statistics"
+        assert "Plains Game Species" in stats, "Plains Game Species should be in the statistics"
+        assert "Other" in stats, "Other should be in the statistics"
+        
+        # Clean up the temporary file
+        import os
+        os.unlink(temp_file_path)
+        
+        print("✅ Excel/CSV file upload test passed!")
+        return True
+    except Exception as e:
+        print(f"❌ Excel/CSV file upload test failed: {str(e)}")
+        return False
+
+def test_invalid_file_upload():
+    """Test uploading invalid file types"""
+    print("Testing invalid file type upload...")
+    
+    try:
+        # Create a sample text file (not CSV or Excel)
+        text_content = "This is not a valid CSV or Excel file."
+        
+        # Create a temporary text file
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix='.txt', delete=False) as temp_file:
+            temp_file.write(text_content.encode('utf-8'))
+            temp_file_path = temp_file.name
+        
+        # Upload the text file
+        with open(temp_file_path, 'rb') as file:
+            response = requests.post(
+                f"{API_URL}/translocations/import-excel-file",
+                files={'file': ('test_invalid.txt', file, 'text/plain')}
+            )
+        
+        print(f"Status Code: {response.status_code}")
+        
+        # We expect a 400 Bad Request for invalid file type
+        assert response.status_code == 400, f"Expected status code 400 for invalid file type, got {response.status_code}"
+        
+        # Clean up the temporary file
+        import os
+        os.unlink(temp_file_path)
+        
+        print("✅ Invalid file upload test passed!")
+        return True
+    except Exception as e:
+        print(f"❌ Invalid file upload test failed: {str(e)}")
+        return False
+
 def run_all_tests():
     """Run all tests and return overall success status"""
     print_separator()
@@ -420,7 +525,9 @@ def run_all_tests():
         "Import Simplified Data": test_import_simplified_data(),
         "Get Translocation Stats": test_get_translocation_stats(),
         "Filtered Translocations": test_filtered_translocations(),
-        "CRUD Operations": test_create_update_delete_translocation()
+        "CRUD Operations": test_create_update_delete_translocation(),
+        "Excel File Upload": test_excel_file_upload(),
+        "Invalid File Upload": test_invalid_file_upload()
     }
     
     print_separator()
