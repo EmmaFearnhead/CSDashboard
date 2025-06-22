@@ -263,8 +263,10 @@ async def import_excel_file(file: UploadFile = File(...)):
                     print(f"Skipping empty row {index+1}")
                     continue
                 
-                # Extract with maximum flexibility
-                project_title = str(row[project_col]) if project_col and not pd.isna(row[project_col]) else f"Project {index+1}"
+                # Extract with maximum flexibility - preserve exact text from spreadsheet
+                project_title_val = row[project_col] if project_col and not pd.isna(row[project_col]) else None
+                project_title = str(project_title_val).strip() if project_title_val is not None else f"Project {index+1}"
+                # Keep project title exactly as written in spreadsheet
                 
                 # Year - handle ANY format
                 year = 2024  # default
