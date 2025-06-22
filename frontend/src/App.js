@@ -662,7 +662,6 @@ const StatsPanel = ({ stats }) => {
   return (
     <div className="bg-white p-6 rounded-lg nature-shadow-lg border-l-4 border-forest-green">
       <h3 className="text-xl font-bold mb-4 text-forest-dark flex items-center">
-        <span className="text-2xl mr-2">🌍</span>
         Conservation Impact
       </h3>
       <div className="space-y-3">
