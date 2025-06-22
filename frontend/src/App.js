@@ -364,7 +364,7 @@ const TranslocationForm = ({ onSubmit }) => {
         <select
           value={formData.transport_mode}
           onChange={(e) => setFormData({...formData, transport_mode: e.target.value})}
-          className="w-full border rounded-md px-3 py-2"
+          className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
           required
         >
           <option value="road">Road (Truck) 🚛</option>
@@ -377,7 +377,7 @@ const TranslocationForm = ({ onSubmit }) => {
         <textarea
           value={formData.additional_notes}
           onChange={(e) => setFormData({...formData, additional_notes: e.target.value})}
-          className="w-full border rounded-md px-3 py-2"
+          className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
           rows="3"
           placeholder="Optional additional information..."
         />
