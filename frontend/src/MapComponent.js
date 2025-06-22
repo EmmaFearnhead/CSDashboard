@@ -246,7 +246,7 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
     const bounds = [];
 
     filteredTranslocations.forEach((translocation) => {
-      // Parse coordinates - DEBUGGING VERSION - Accept all valid coordinates
+      // Parse coordinates - ENHANCED for Google Maps format with proper validation
       const parseCoordinates = (coordString) => {
         if (!coordString || coordString === "" || coordString === "0, 0") return [0, 0];
         try {
@@ -258,18 +258,22 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
             const lat = parseFloat(coords[0].trim());
             const lng = parseFloat(coords[1].trim());
             
-            console.log(`Debug parsing: "${coordString}" → [${lat}, ${lng}]`);
+            console.log(`Map parsing: "${coordString}" → lat: ${lat}, lng: ${lng}`);
             
-            // Just check for valid numbers - no geographic bounds
-            if (!isNaN(lat) && !isNaN(lng)) {
+            // Validate coordinates are within valid global ranges
+            // Latitude: -90 to 90, Longitude: -180 to 180
+            if (!isNaN(lat) && !isNaN(lng) && 
+                lat >= -90 && lat <= 90 && 
+                lng >= -180 && lng <= 180) {
+              console.log(`✅ Valid coordinates for map: [${lat}, ${lng}]`);
               return [lat, lng];
             } else {
-              console.warn('Invalid coordinates (NaN):', coordString);
+              console.warn(`❌ Invalid coordinates for map: lat=${lat}, lng=${lng} from "${coordString}"`);
               return [0, 0];
             }
           }
         } catch (error) {
-          console.error('Error parsing coordinates:', coordString, error);
+          console.error('❌ Error parsing coordinates for map:', coordString, error);
         }
         return [0, 0];
       };
