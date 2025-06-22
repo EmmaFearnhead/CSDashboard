@@ -318,10 +318,12 @@ function App() {
 
   const importExcelFile = async (file) => {
     try {
+      console.log('Starting file upload:', file.name, file.type, file.size);
       setUploadLoading(true);
       const formData = new FormData();
       formData.append('file', file);
       
+      console.log('Making API request to:', `${API}/translocations/import-excel-file`);
       const response = await axios.post(`${API}/translocations/import-excel-file`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -338,6 +340,7 @@ function App() {
       
     } catch (error) {
       console.error('Error uploading file:', error);
+      console.error('Error details:', error.response?.data);
       alert(`Error uploading file: ${error.response?.data?.detail || error.message}`);
     } finally {
       setUploadLoading(false);
