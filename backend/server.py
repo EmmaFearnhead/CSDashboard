@@ -464,7 +464,7 @@ async def import_excel_file(file: UploadFile = File(...)):
                 return "0, 0"
         def categorize_species(original_species, additional_info=""):
             if pd.isna(original_species):
-                return "Other"
+                return "Unknown"
                 
             species_str = str(original_species).strip()
             additional_str = str(additional_info) if not pd.isna(additional_info) else ""
@@ -487,7 +487,8 @@ async def import_excel_file(file: UploadFile = File(...)):
                 if species_count >= 2 or ";" in additional_str or ("," in additional_str and any(keyword in additional_str.lower() for keyword in multi_species_keywords)):
                     return "Plains Game Species"
                 else:
-                    return "Other"
+                    # Return the actual species name instead of "Other"
+                    return species_str.title() if species_str else "Unknown"
         
         # Column mapping - handle different possible column names
         column_mapping = {
