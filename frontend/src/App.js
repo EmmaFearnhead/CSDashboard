@@ -648,17 +648,6 @@ const TranslocationForm = ({ onSubmit, editingTranslocation, onCancel }) => {
 };
 
 const StatsPanel = ({ stats }) => {
-  const speciesEmojis = {
-    elephant: '🐘',
-    rhino: '🦏',
-    lion: '🦁',
-    cheetah: '🐆',
-    buffalo: '🐃',
-    giraffe: '🦒',
-    zebra: '🦓',
-    other: '🦌'
-  };
-
   return (
     <div className="bg-white p-6 rounded-lg nature-shadow-lg border-l-4 border-forest-green">
       <h3 className="text-xl font-bold mb-4 text-forest-dark flex items-center">
@@ -668,7 +657,6 @@ const StatsPanel = ({ stats }) => {
         {Object.entries(stats).map(([species, data]) => (
           <div key={species} className="stats-item flex justify-between items-center p-3 rounded-md">
             <div className="flex items-center space-x-3">
-              <span className="text-2xl">{speciesEmojis[species] || '🦌'}</span>
               <span className="font-medium capitalize text-forest-dark">{species}</span>
             </div>
             <div className="text-right">
