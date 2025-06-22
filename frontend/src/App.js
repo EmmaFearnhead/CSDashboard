@@ -464,7 +464,6 @@ const TranslocationForm = ({ onSubmit, editingTranslocation, onCancel }) => {
   return (
     <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-lg space-y-4 border-l-4 border-nature-green">
       <h3 className="text-xl font-bold mb-4 text-forest-dark flex items-center">
-        <span className="text-2xl mr-2">🌿</span>
         {editingTranslocation ? 'Edit Conservation Record' : 'Add New Conservation Record'}
       </h3>
       
