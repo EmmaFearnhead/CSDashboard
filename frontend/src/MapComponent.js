@@ -246,34 +246,24 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
     const bounds = [];
 
     filteredTranslocations.forEach((translocation) => {
-      // Parse coordinates - ENHANCED for Google Maps format with proper validation
+      // Parse coordinates - SIMPLE and DIRECT for Google Maps format
       const parseCoordinates = (coordString) => {
         if (!coordString || coordString === "" || coordString === "0, 0") return [0, 0];
+        
         try {
-          // Handle Google Maps format: "-27.808400634565363, 32.34692072433984"
-          const cleanCoords = coordString.replace(/[°'"]/g, "").trim();
-          const coords = cleanCoords.split(",");
-          
-          if (coords.length >= 2) {
-            const lat = parseFloat(coords[0].trim());
-            const lng = parseFloat(coords[1].trim());
+          // Split on comma and parse directly
+          const parts = coordString.split(",");
+          if (parts.length >= 2) {
+            const lat = parseFloat(parts[0].trim());
+            const lng = parseFloat(parts[1].trim());
             
-            console.log(`Map parsing: "${coordString}" → lat: ${lat}, lng: ${lng}`);
-            
-            // Validate coordinates are within valid global ranges
-            // Latitude: -90 to 90, Longitude: -180 to 180
-            if (!isNaN(lat) && !isNaN(lng) && 
-                lat >= -90 && lat <= 90 && 
-                lng >= -180 && lng <= 180) {
-              console.log(`✅ Valid coordinates for map: [${lat}, ${lng}]`);
+            // Simple validation - just check they're valid numbers
+            if (!isNaN(lat) && !isNaN(lng)) {
               return [lat, lng];
-            } else {
-              console.warn(`❌ Invalid coordinates for map: lat=${lat}, lng=${lng} from "${coordString}"`);
-              return [0, 0];
             }
           }
         } catch (error) {
-          console.error('❌ Error parsing coordinates for map:', coordString, error);
+          console.error('Error parsing:', coordString, error);
         }
         return [0, 0];
       };
