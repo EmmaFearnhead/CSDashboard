@@ -34,15 +34,7 @@ class Species(str, Enum):
     ELEPHANT = "Elephant"
     BLACK_RHINO = "Black Rhino"
     WHITE_RHINO = "White Rhino"
-    LION = "Lion"
-    BUFFALO = "Buffalo"
-    IMPALA = "Impala"
-    SABLE = "Sable"
-    KUDU = "Kudu"
-    WARTHOG = "Warthog"
-    WATERBUCK = "Waterbuck"
-    ELAND = "Eland"
-    ZEBRA = "Zebra"
+    PLAINS_GAME = "Plains Game Species"
     OTHER = "Other"
 
 class SpecialProject(str, Enum):
