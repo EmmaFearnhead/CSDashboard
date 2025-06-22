@@ -75,7 +75,7 @@ const Map = ({ translocations, filteredTranslocations }) => {
           touchZoom: true
         }).setView([-15, 25], 4);
 
-        // Try multiple tile layer providers for better compatibility
+        // Try multiple tile layer providers for better compatibility (English versions)
         const tileLayerOptions = [
           {
             url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -88,13 +88,13 @@ const Map = ({ translocations, filteredTranslocations }) => {
             maxZoom: 19
           },
           {
-            url: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png',
-            attribution: '© OpenStreetMap contributors',
+            url: 'https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.png',
+            attribution: '© Stadia Maps, © OpenStreetMap contributors',
             maxZoom: 19
           },
           {
-            url: 'https://tiles.wmflabs.org/osm-no-labels/{z}/{x}/{y}.png',
-            attribution: '© OpenStreetMap contributors',
+            url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+            attribution: '© Esri, © OpenStreetMap contributors',
             maxZoom: 19
           }
         ];
