@@ -706,7 +706,7 @@ function App() {
 
   const importHistoricalData = async () => {
     try {
-      await axios.post(`${API}/translocations/import-historical`);
+      await axios.post(`${API}/translocations/clear-and-import`);
       fetchTranslocations();
       fetchStats();
     } catch (error) {
