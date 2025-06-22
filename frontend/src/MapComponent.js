@@ -54,12 +54,13 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
         touchZoom: true
       }).setView([-15, 25], 4);
 
-      // English tile providers
+      // English tile providers with better reliability
       const tileLayerOptions = [
         {
           url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
           attribution: '© OpenStreetMap contributors',
-          maxZoom: 19
+          maxZoom: 19,
+          language: 'en'
         },
         {
           url: 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
@@ -67,8 +68,18 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
           maxZoom: 19
         },
         {
+          url: 'https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.png',
+          attribution: '© Stadia Maps, © OpenStreetMap contributors',
+          maxZoom: 19
+        },
+        {
           url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
           attribution: '© Esri, © OpenStreetMap contributors',
+          maxZoom: 19
+        },
+        {
+          url: 'https://mt1.google.com/vt/lyrs=r&x={x}&y={y}&z={z}',
+          attribution: '© Google Maps',
           maxZoom: 19
         }
       ];
