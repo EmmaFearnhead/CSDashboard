@@ -545,12 +545,12 @@ async def import_excel_file(file: UploadFile = File(...)):
                 
                 # Source area
                 source_name = str(row[found_columns.get('source_name', 'Source Area: Name')]) if found_columns.get('source_name') and not pd.isna(row[found_columns.get('source_name', 'Source Area: Name')]) else "Unknown Source"
-                source_coordinates = str(row[found_columns.get('source_coordinates', 'Source Area: Co-Ordinates')]) if found_columns.get('source_coordinates') and not pd.isna(row[found_columns.get('source_coordinates', 'Source Area: Co-Ordinates')]) else "0, 0"
+                source_coordinates = validate_coordinates(row[found_columns.get('source_coordinates', 'Source Area: Co-Ordinates')])
                 source_country = str(row[found_columns.get('source_country', 'Source Area: Country')]) if found_columns.get('source_country') and not pd.isna(row[found_columns.get('source_country', 'Source Area: Country')]) else "Unknown"
                 
                 # Recipient area
                 recipient_name = str(row[found_columns.get('recipient_name', 'Recipient Area: Name')]) if found_columns.get('recipient_name') and not pd.isna(row[found_columns.get('recipient_name', 'Recipient Area: Name')]) else "Unknown Recipient"
-                recipient_coordinates = str(row[found_columns.get('recipient_coordinates', 'Recipient Area: Co-Ordinates')]) if found_columns.get('recipient_coordinates') and not pd.isna(row[found_columns.get('recipient_coordinates', 'Recipient Area: Co-Ordinates')]) else "0, 0"
+                recipient_coordinates = validate_coordinates(row[found_columns.get('recipient_coordinates', 'Recipient Area: Co-Ordinates')])
                 recipient_country = str(row[found_columns.get('recipient_country', 'Recipient Area: Country')]) if found_columns.get('recipient_country') and not pd.isna(row[found_columns.get('recipient_country', 'Recipient Area: Country')]) else "Unknown"
                 
                 # Transport and special project
