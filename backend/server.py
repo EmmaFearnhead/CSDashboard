@@ -311,13 +311,15 @@ async def import_excel_file(file: UploadFile = File(...)):
                             lat = float(lat_str)
                             lng = float(lng_str)
                             
-                            # Accept all valid coordinates for debugging
-                            if not (isnan(lat) or isnan(lng)):
-                                # Store with original precision maintained
+                            # Validate coordinates are reasonable (global range but Africa-focused)
+                            # Latitude: -90 to 90, Longitude: -180 to 180
+                            # Africa focus: Lat -40 to 40, Lng -25 to 55
+                            if (-90 <= lat <= 90) and (-180 <= lng <= 180):
+                                # Store with precision maintained for map display
                                 dest_coords = f"{lat}, {lng}"
-                                print(f"✅ Stored destination coordinates: {dest_coords}")
+                                print(f"✅ Valid destination coordinates: {dest_coords}")
                             else:
-                                print(f"❌ Invalid destination coordinates (NaN): {lat}, {lng}")
+                                print(f"❌ Destination coordinates outside valid range: lat={lat}, lng={lng}")
                                 dest_coords = "0, 0"
                         except ValueError as e:
                             print(f"❌ Failed to parse destination coordinates: {e}")
