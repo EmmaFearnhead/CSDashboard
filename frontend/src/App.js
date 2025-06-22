@@ -1041,7 +1041,7 @@ function App() {
                 Wildlife Translocation Map
               </h2>
               {filteredTranslocations.length > 0 ? (
-                <Map translocations={translocations} filteredTranslocations={filteredTranslocations} />
+                <MapComponent translocations={translocations} filteredTranslocations={filteredTranslocations} />
               ) : (
                 <div className="w-full h-96 bg-nature-light rounded-lg flex items-center justify-center border-2 border-sage-green">
                   <div className="text-center">
