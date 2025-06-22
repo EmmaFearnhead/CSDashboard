@@ -631,7 +631,7 @@ const TranslocationForm = ({ onSubmit, editingTranslocation, onCancel }) => {
           type="submit"
           className="flex-1 bg-nature-green text-white py-3 px-4 rounded-md hover:bg-forest-green transition-colors shadow-lg font-semibold"
         >
-          🌿 {editingTranslocation ? 'Update' : 'Add'} Conservation Record
+          {editingTranslocation ? 'Update' : 'Add'} Conservation Record
         </button>
         {editingTranslocation && (
           <button
