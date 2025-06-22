@@ -42,21 +42,86 @@ const loadLeafletResources = () => {
 };
 
 const Map = ({ translocations, filteredTranslocations }) => {
+  // Use a ref to store the map instance
+  const mapRef = React.useRef(null);
+  
+  // Initialize map only once
   useEffect(() => {
-    loadLeafletResources().then(() => {
-      // Clear existing map if it exists
-      const mapContainer = document.getElementById('map');
-      mapContainer.innerHTML = '';
-
-      // Initialize map centered on Africa
-      const map = window.L.map('map').setView([-15, 25], 4);
-
-      // Add OpenStreetMap tiles
-      window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 18,
-      }).addTo(map);
-
+    let map = null;
+    
+    const initMap = async () => {
+      try {
+        // Load Leaflet resources first
+        await loadLeafletResources();
+        
+        // Clear existing map if it exists
+        const mapContainer = document.getElementById('map');
+        if (!mapContainer) return;
+        
+        // If we already have a map instance, clean it up
+        if (mapRef.current) {
+          mapRef.current.remove();
+          mapRef.current = null;
+        }
+        
+        // Initialize map centered on Africa
+        map = window.L.map('map', {
+          attributionControl: true,
+          zoomControl: true,
+          doubleClickZoom: true,
+          scrollWheelZoom: true,
+          dragging: true,
+          zoom: 4
+        }).setView([-15, 25], 4);
+        
+        // Store the map instance in the ref
+        mapRef.current = map;
+        
+        // Add OpenStreetMap tiles with fallback
+        try {
+          window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 18,
+          }).addTo(map);
+        } catch (error) {
+          console.error('Failed to load OpenStreetMap tiles:', error);
+          
+          // Try alternative tile provider as fallback
+          try {
+            window.L.tileLayer('https://tile.openstreetmap.de/{z}/{x}/{y}.png', {
+              attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+              maxZoom: 18,
+            }).addTo(map);
+          } catch (fallbackError) {
+            console.error('Failed to load fallback tiles:', fallbackError);
+            
+            // Last resort - use a static color background
+            window.L.rectangle([[-90, -180], [90, 180]], {
+              color: "#a0c8f0",
+              weight: 1,
+              fillColor: "#f0f0f0",
+              fillOpacity: 1
+            }).addTo(map);
+          }
+        }
+        
+        updateMapMarkers();
+      } catch (error) {
+        console.error('Error initializing map:', error);
+      }
+    };
+    
+    // Function to update markers based on filtered data
+    const updateMapMarkers = () => {
+      if (!mapRef.current) return;
+      
+      // Clear existing markers and layers
+      mapRef.current.eachLayer(layer => {
+        if (layer instanceof window.L.Marker || layer instanceof window.L.Polyline) {
+          mapRef.current.removeLayer(layer);
+        }
+      });
+      
       // Species colors
       const speciesColors = {
         elephant: '#FF6B6B',
@@ -103,20 +168,20 @@ const Map = ({ translocations, filteredTranslocations }) => {
         const sourceMarker = window.L.marker([sourceLat, sourceLng], {
           icon: createMarkerIcon(speciesColors[translocation.species], true),
           title: `Source: ${translocation.source_reserve.name}`
-        }).addTo(map);
+        }).addTo(mapRef.current);
 
         // Destination marker
         const destMarker = window.L.marker([destLat, destLng], {
           icon: createMarkerIcon(speciesColors[translocation.species], false),
           title: `Destination: ${translocation.recipient_reserve.name}`
-        }).addTo(map);
+        }).addTo(mapRef.current);
 
         // Connection line
         const polyline = window.L.polyline([[sourceLat, sourceLng], [destLat, destLng]], {
           color: speciesColors[translocation.species],
           weight: 3,
           opacity: 0.6
-        }).addTo(map);
+        }).addTo(mapRef.current);
 
         // Info popups
         const sourcePopupContent = `
@@ -152,9 +217,130 @@ const Map = ({ translocations, filteredTranslocations }) => {
 
       // Fit map to show all markers
       if (bounds.length > 0) {
-        map.fitBounds(bounds, { padding: [20, 20] });
+        mapRef.current.fitBounds(bounds, { padding: [20, 20] });
       }
-    });
+    };
+    
+    // Initialize the map
+    initMap();
+    
+    // Cleanup function
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []); // Empty dependency array means this effect runs once on mount
+  
+  // Update markers when filtered data changes
+  useEffect(() => {
+    if (mapRef.current) {
+      // Clear existing markers and layers
+      mapRef.current.eachLayer(layer => {
+        if (layer instanceof window.L.Marker || layer instanceof window.L.Polyline) {
+          mapRef.current.removeLayer(layer);
+        }
+      });
+      
+      // Species colors
+      const speciesColors = {
+        elephant: '#FF6B6B',
+        rhino: '#4ECDC4',
+        lion: '#45B7D1',
+        cheetah: '#96CEB4',
+        buffalo: '#FECA57',
+        giraffe: '#FF9FF3',
+        zebra: '#A55A3C',
+        other: '#95A5A6'
+      };
+
+      // Transport mode icons
+      const getTransportIcon = (mode) => {
+        return mode === 'air' ? '✈️' : '🚛';
+      };
+
+      // Create marker icon function
+      const createMarkerIcon = (color, isSource = true) => {
+        return window.L.divIcon({
+          html: `<div style="
+            background-color: ${color};
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: ${isSource ? '2px solid #ffffff' : '2px solid #000000'};
+            opacity: ${isSource ? '0.8' : '1'};
+          "></div>`,
+          className: 'custom-div-icon',
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
+        });
+      };
+
+      const bounds = [];
+
+      filteredTranslocations.forEach((translocation) => {
+        const sourceLat = translocation.source_reserve.latitude;
+        const sourceLng = translocation.source_reserve.longitude;
+        const destLat = translocation.recipient_reserve.latitude;
+        const destLng = translocation.recipient_reserve.longitude;
+
+        // Source marker
+        const sourceMarker = window.L.marker([sourceLat, sourceLng], {
+          icon: createMarkerIcon(speciesColors[translocation.species], true),
+          title: `Source: ${translocation.source_reserve.name}`
+        }).addTo(mapRef.current);
+
+        // Destination marker
+        const destMarker = window.L.marker([destLat, destLng], {
+          icon: createMarkerIcon(speciesColors[translocation.species], false),
+          title: `Destination: ${translocation.recipient_reserve.name}`
+        }).addTo(mapRef.current);
+
+        // Connection line
+        const polyline = window.L.polyline([[sourceLat, sourceLng], [destLat, destLng]], {
+          color: speciesColors[translocation.species],
+          weight: 3,
+          opacity: 0.6
+        }).addTo(mapRef.current);
+
+        // Info popups
+        const sourcePopupContent = `
+          <div style="padding: 8px; min-width: 200px;">
+            <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">${translocation.source_reserve.name}</h3>
+            <p><strong>Species:</strong> ${translocation.species.charAt(0).toUpperCase() + translocation.species.slice(1)}</p>
+            <p><strong>Animals:</strong> ${translocation.number_of_animals}</p>
+            <p><strong>Date:</strong> ${translocation.month}/${translocation.year}</p>
+            <p><strong>Transport:</strong> ${getTransportIcon(translocation.transport_mode)} ${translocation.transport_mode.charAt(0).toUpperCase() + translocation.transport_mode.slice(1)}</p>
+            <p><strong>Role:</strong> Source Location</p>
+            ${translocation.additional_notes ? `<p><strong>Notes:</strong> ${translocation.additional_notes}</p>` : ''}
+          </div>
+        `;
+
+        const destPopupContent = `
+          <div style="padding: 8px; min-width: 200px;">
+            <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">${translocation.recipient_reserve.name}</h3>
+            <p><strong>Species:</strong> ${translocation.species.charAt(0).toUpperCase() + translocation.species.slice(1)}</p>
+            <p><strong>Animals:</strong> ${translocation.number_of_animals}</p>
+            <p><strong>Date:</strong> ${translocation.month}/${translocation.year}</p>
+            <p><strong>Transport:</strong> ${getTransportIcon(translocation.transport_mode)} ${translocation.transport_mode.charAt(0).toUpperCase() + translocation.transport_mode.slice(1)}</p>
+            <p><strong>Role:</strong> Destination Location</p>
+            ${translocation.additional_notes ? `<p><strong>Notes:</strong> ${translocation.additional_notes}</p>` : ''}
+          </div>
+        `;
+
+        sourceMarker.bindPopup(sourcePopupContent);
+        destMarker.bindPopup(destPopupContent);
+
+        bounds.push([sourceLat, sourceLng]);
+        bounds.push([destLat, destLng]);
+      });
+
+      // Fit map to show all markers
+      if (bounds.length > 0) {
+        mapRef.current.fitBounds(bounds, { padding: [20, 20] });
+      }
+    }
   }, [filteredTranslocations]);
 
   return <div id="map" className="w-full h-96 rounded-lg shadow-lg"></div>;
