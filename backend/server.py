@@ -230,19 +230,19 @@ async def import_excel_file(file: UploadFile = File(...)):
             return None
         
         # Find columns with very flexible matching
-        project_col = find_column(df, ['project', 'title', 'name'])
+        project_col = find_column(df, ['project', 'title'])
         year_col = find_column(df, ['year', 'date'])
         species_col = find_column(df, ['species', 'animal'])
         number_col = find_column(df, ['number', 'count', 'animals'])
-        source_name_col = find_column(df, ['source', 'origin'])
-        source_coord_col = find_column(df, ['source', 'coord', 'coordinates'])
-        source_country_col = find_column(df, ['source', 'country'])
-        dest_name_col = find_column(df, ['recipient', 'destination', 'dest'])
-        dest_coord_col = find_column(df, ['recipient', 'destination', 'dest', 'coord'])
-        dest_country_col = find_column(df, ['recipient', 'destination', 'dest', 'country'])
+        source_name_col = find_column(df, ['source area: name', 'source name'])
+        source_coord_col = find_column(df, ['source area: co-ordinates', 'source coordinates', 'source coord'])
+        source_country_col = find_column(df, ['source area: country', 'source country'])
+        dest_name_col = find_column(df, ['recipient area: name', 'recipient name', 'destination name'])
+        dest_coord_col = find_column(df, ['recipient area: co-ordinates', 'recipient coordinates', 'destination coord'])
+        dest_country_col = find_column(df, ['recipient area: country', 'recipient country', 'destination country'])
         transport_col = find_column(df, ['transport', 'method'])
-        project_col_alt = find_column(df, ['special', 'project'])
-        info_col = find_column(df, ['info', 'additional', 'notes'])
+        project_col_alt = find_column(df, ['special project', 'special'])
+        info_col = find_column(df, ['additional info', 'info', 'additional', 'notes'])
         
         print(f"Found columns:")
         print(f"  Project: {project_col}")
