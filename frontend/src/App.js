@@ -951,7 +951,7 @@ function App() {
                           </div>
                         </td>
                         <td className="p-2">
-                          {translocation.transport === 'Road' ? '🚛' : '✈️'} {translocation.transport}
+                          {translocation.transport}
                         </td>
                         <td className="p-2">
                           {translocation.special_project && (
