@@ -966,13 +966,13 @@ function App() {
                               onClick={() => editTranslocation(translocation)}
                               className="bg-nature-green text-white px-2 py-1 rounded text-xs hover:bg-forest-green"
                             >
-                              ✏️ Edit
+                              Edit
                             </button>
                             <button
                               onClick={() => deleteTranslocation(translocation.id)}
                               className="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600"
                             >
-                              🗑️ Delete
+                              Delete
                             </button>
                           </div>
                         </td>
