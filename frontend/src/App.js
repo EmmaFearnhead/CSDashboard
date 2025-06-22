@@ -791,7 +791,6 @@ function App() {
     return (
       <div className="min-h-screen conservation-loading flex items-center justify-center">
         <div className="text-center">
-          <div className="text-6xl mb-4">🌿</div>
           <div className="text-xl font-semibold text-forest-dark">Loading Conservation Dashboard...</div>
           <div className="text-sm text-nature-brown mt-2">Preparing wildlife translocation data</div>
         </div>
