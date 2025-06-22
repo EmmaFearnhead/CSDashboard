@@ -85,7 +85,7 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
           container.title = 'Zoom to Africa';
           
           container.onclick = function() {
-            map.setView([-15, 25], 4);
+            map.setView([-25, 28], 5);
           };
           
           return container;
