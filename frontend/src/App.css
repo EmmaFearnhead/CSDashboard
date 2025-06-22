@@ -109,7 +109,7 @@
 /* Map container styling */
 #map {
   width: 100%;
-  height: 24rem;
+  height: 32rem;
   border-radius: 0.5rem;
   box-shadow: 0 10px 15px -3px rgba(45, 80, 22, 0.1), 0 4px 6px -2px rgba(45, 80, 22, 0.05);
   z-index: 1;
