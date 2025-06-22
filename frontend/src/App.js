@@ -4,35 +4,58 @@ import axios from "axios";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
-const GOOGLE_MAPS_API_KEY = "AIzaSyDW2kVAelPvl8EZORFSagOaJNQZSvSSTQM";
 
-// Add Google Maps script
-const loadGoogleMapsScript = () => {
+// Load Leaflet CSS and JS
+const loadLeafletResources = () => {
   return new Promise((resolve) => {
-    if (window.google && window.google.maps) {
+    // Check if Leaflet is already loaded
+    if (window.L) {
       resolve();
       return;
     }
-    
+
+    // Load CSS first
+    const cssLink = document.createElement('link');
+    cssLink.rel = 'stylesheet';
+    cssLink.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    cssLink.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+    cssLink.crossOrigin = '';
+    document.head.appendChild(cssLink);
+
+    // Load JS
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=geometry`;
-    script.async = true;
-    script.defer = true;
-    script.onload = resolve;
+    script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+    script.crossOrigin = '';
+    script.onload = () => {
+      // Fix for default markers in Leaflet
+      delete window.L.Icon.Default.prototype._getIconUrl;
+      window.L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+      });
+      resolve();
+    };
     document.head.appendChild(script);
   });
 };
 
 const Map = ({ translocations, filteredTranslocations }) => {
   useEffect(() => {
-    loadGoogleMapsScript().then(() => {
-      const map = new window.google.maps.Map(document.getElementById('map'), {
-        zoom: 4,
-        center: { lat: -15, lng: 25 }, // Center on Africa
-        mapTypeId: 'terrain'
-      });
+    loadLeafletResources().then(() => {
+      // Clear existing map if it exists
+      const mapContainer = document.getElementById('map');
+      mapContainer.innerHTML = '';
 
-      const bounds = new window.google.maps.LatLngBounds();
+      // Initialize map centered on Africa
+      const map = window.L.map('map').setView([-15, 25], 4);
+
+      // Add OpenStreetMap tiles
+      window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 18,
+      }).addTo(map);
 
       // Species colors
       const speciesColors = {
@@ -51,100 +74,85 @@ const Map = ({ translocations, filteredTranslocations }) => {
         return mode === 'air' ? '✈️' : '🚛';
       };
 
+      // Create marker icon function
+      const createMarkerIcon = (color, isSource = true) => {
+        return window.L.divIcon({
+          html: `<div style="
+            background-color: ${color};
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: ${isSource ? '2px solid #ffffff' : '2px solid #000000'};
+            opacity: ${isSource ? '0.8' : '1'};
+          "></div>`,
+          className: 'custom-div-icon',
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
+        });
+      };
+
+      const bounds = [];
+
       filteredTranslocations.forEach((translocation) => {
-        const sourceLatLng = new window.google.maps.LatLng(
-          translocation.source_reserve.latitude,
-          translocation.source_reserve.longitude
-        );
-        const destLatLng = new window.google.maps.LatLng(
-          translocation.recipient_reserve.latitude,
-          translocation.recipient_reserve.longitude
-        );
+        const sourceLat = translocation.source_reserve.latitude;
+        const sourceLng = translocation.source_reserve.longitude;
+        const destLat = translocation.recipient_reserve.latitude;
+        const destLng = translocation.recipient_reserve.longitude;
 
         // Source marker
-        const sourceMarker = new window.google.maps.Marker({
-          position: sourceLatLng,
-          map: map,
-          icon: {
-            path: window.google.maps.SymbolPath.CIRCLE,
-            scale: 8,
-            fillColor: speciesColors[translocation.species],
-            fillOpacity: 0.8,
-            strokeColor: '#ffffff',
-            strokeWeight: 2
-          },
+        const sourceMarker = window.L.marker([sourceLat, sourceLng], {
+          icon: createMarkerIcon(speciesColors[translocation.species], true),
           title: `Source: ${translocation.source_reserve.name}`
-        });
+        }).addTo(map);
 
         // Destination marker
-        const destMarker = new window.google.maps.Marker({
-          position: destLatLng,
-          map: map,
-          icon: {
-            path: window.google.maps.SymbolPath.CIRCLE,
-            scale: 8,
-            fillColor: speciesColors[translocation.species],
-            fillOpacity: 1,
-            strokeColor: '#000000',
-            strokeWeight: 2
-          },
+        const destMarker = window.L.marker([destLat, destLng], {
+          icon: createMarkerIcon(speciesColors[translocation.species], false),
           title: `Destination: ${translocation.recipient_reserve.name}`
-        });
+        }).addTo(map);
 
         // Connection line
-        const flightPath = new window.google.maps.Polyline({
-          path: [sourceLatLng, destLatLng],
-          geodesic: true,
-          strokeColor: speciesColors[translocation.species],
-          strokeOpacity: 0.6,
-          strokeWeight: 3
-        });
+        const polyline = window.L.polyline([[sourceLat, sourceLng], [destLat, destLng]], {
+          color: speciesColors[translocation.species],
+          weight: 3,
+          opacity: 0.6
+        }).addTo(map);
 
-        flightPath.setMap(map);
+        // Info popups
+        const sourcePopupContent = `
+          <div style="padding: 8px; min-width: 200px;">
+            <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">${translocation.source_reserve.name}</h3>
+            <p><strong>Species:</strong> ${translocation.species.charAt(0).toUpperCase() + translocation.species.slice(1)}</p>
+            <p><strong>Animals:</strong> ${translocation.number_of_animals}</p>
+            <p><strong>Date:</strong> ${translocation.month}/${translocation.year}</p>
+            <p><strong>Transport:</strong> ${getTransportIcon(translocation.transport_mode)} ${translocation.transport_mode.charAt(0).toUpperCase() + translocation.transport_mode.slice(1)}</p>
+            <p><strong>Role:</strong> Source Location</p>
+            ${translocation.additional_notes ? `<p><strong>Notes:</strong> ${translocation.additional_notes}</p>` : ''}
+          </div>
+        `;
 
-        // Info windows
-        const sourceInfoWindow = new window.google.maps.InfoWindow({
-          content: `
-            <div class="p-3">
-              <h3 class="font-bold text-lg">${translocation.source_reserve.name}</h3>
-              <p><strong>Species:</strong> ${translocation.species.charAt(0).toUpperCase() + translocation.species.slice(1)}</p>
-              <p><strong>Animals:</strong> ${translocation.number_of_animals}</p>
-              <p><strong>Date:</strong> ${translocation.month}/${translocation.year}</p>
-              <p><strong>Transport:</strong> ${getTransportIcon(translocation.transport_mode)} ${translocation.transport_mode.charAt(0).toUpperCase() + translocation.transport_mode.slice(1)}</p>
-              <p><strong>Role:</strong> Source Location</p>
-              ${translocation.additional_notes ? `<p><strong>Notes:</strong> ${translocation.additional_notes}</p>` : ''}
-            </div>
-          `
-        });
+        const destPopupContent = `
+          <div style="padding: 8px; min-width: 200px;">
+            <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">${translocation.recipient_reserve.name}</h3>
+            <p><strong>Species:</strong> ${translocation.species.charAt(0).toUpperCase() + translocation.species.slice(1)}</p>
+            <p><strong>Animals:</strong> ${translocation.number_of_animals}</p>
+            <p><strong>Date:</strong> ${translocation.month}/${translocation.year}</p>
+            <p><strong>Transport:</strong> ${getTransportIcon(translocation.transport_mode)} ${translocation.transport_mode.charAt(0).toUpperCase() + translocation.transport_mode.slice(1)}</p>
+            <p><strong>Role:</strong> Destination Location</p>
+            ${translocation.additional_notes ? `<p><strong>Notes:</strong> ${translocation.additional_notes}</p>` : ''}
+          </div>
+        `;
 
-        const destInfoWindow = new window.google.maps.InfoWindow({
-          content: `
-            <div class="p-3">
-              <h3 class="font-bold text-lg">${translocation.recipient_reserve.name}</h3>
-              <p><strong>Species:</strong> ${translocation.species.charAt(0).toUpperCase() + translocation.species.slice(1)}</p>
-              <p><strong>Animals:</strong> ${translocation.number_of_animals}</p>
-              <p><strong>Date:</strong> ${translocation.month}/${translocation.year}</p>
-              <p><strong>Transport:</strong> ${getTransportIcon(translocation.transport_mode)} ${translocation.transport_mode.charAt(0).toUpperCase() + translocation.transport_mode.slice(1)}</p>
-              <p><strong>Role:</strong> Destination Location</p>
-              ${translocation.additional_notes ? `<p><strong>Notes:</strong> ${translocation.additional_notes}</p>` : ''}
-            </div>
-          `
-        });
+        sourceMarker.bindPopup(sourcePopupContent);
+        destMarker.bindPopup(destPopupContent);
 
-        sourceMarker.addListener('click', () => {
-          sourceInfoWindow.open(map, sourceMarker);
-        });
-
-        destMarker.addListener('click', () => {
-          destInfoWindow.open(map, destMarker);
-        });
-
-        bounds.extend(sourceLatLng);
-        bounds.extend(destLatLng);
+        bounds.push([sourceLat, sourceLng]);
+        bounds.push([destLat, destLng]);
       });
 
-      if (filteredTranslocations.length > 0) {
-        map.fitBounds(bounds);
+      // Fit map to show all markers
+      if (bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [20, 20] });
       }
     });
   }, [filteredTranslocations]);
