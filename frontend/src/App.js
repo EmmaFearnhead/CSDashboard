@@ -310,32 +310,49 @@ const Map = ({ translocations, filteredTranslocations }) => {
       const bounds = [];
 
       filteredTranslocations.forEach((translocation) => {
-        const sourceLat = translocation.source_reserve.latitude;
-        const sourceLng = translocation.source_reserve.longitude;
-        const destLat = translocation.recipient_reserve.latitude;
-        const destLng = translocation.recipient_reserve.longitude;
+        // Parse coordinates from string format
+        const parseCoordinates = (coordString) => {
+          if (!coordString || coordString === "") return [0, 0];
+          try {
+            const coords = coordString.replace(/[°'"]/g, "").split(",");
+            if (coords.length >= 2) {
+              return [parseFloat(coords[0].trim()), parseFloat(coords[1].trim())];
+            }
+          } catch (error) {
+            console.error('Error parsing coordinates:', coordString, error);
+          }
+          return [0, 0];
+        };
+
+        const [sourceLat, sourceLng] = parseCoordinates(translocation.source_area.coordinates);
+        const [destLat, destLng] = parseCoordinates(translocation.recipient_area.coordinates);
+
+        // Skip if coordinates are invalid
+        if (sourceLat === 0 && sourceLng === 0 && destLat === 0 && destLng === 0) {
+          return;
+        }
 
         // Source marker
         const sourceMarker = createMarker(
           [sourceLat, sourceLng], 
-          speciesColors[translocation.species], 
+          speciesColors[translocation.species] || speciesColors['Other'], 
           true
         ).addTo(mapRef.current);
         
-        sourceMarker.bindTooltip(`Source: ${translocation.source_reserve.name}`);
+        sourceMarker.bindTooltip(`Source: ${translocation.source_area.name}`);
 
         // Destination marker
         const destMarker = createMarker(
           [destLat, destLng], 
-          speciesColors[translocation.species], 
+          speciesColors[translocation.species] || speciesColors['Other'], 
           false
         ).addTo(mapRef.current);
         
-        destMarker.bindTooltip(`Destination: ${translocation.recipient_reserve.name}`);
+        destMarker.bindTooltip(`Destination: ${translocation.recipient_area.name}`);
 
         // Connection line
         const polyline = window.L.polyline([[sourceLat, sourceLng], [destLat, destLng]], {
-          color: speciesColors[translocation.species],
+          color: speciesColors[translocation.species] || speciesColors['Other'],
           weight: 3,
           opacity: 0.6
         }).addTo(mapRef.current);
@@ -343,25 +360,29 @@ const Map = ({ translocations, filteredTranslocations }) => {
         // Info popups
         const sourcePopupContent = `
           <div style="padding: 8px; min-width: 200px;">
-            <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">${translocation.source_reserve.name}</h3>
-            <p><strong>Species:</strong> ${translocation.species.charAt(0).toUpperCase() + translocation.species.slice(1)}</p>
+            <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">${translocation.source_area.name}</h3>
+            <p><strong>Project:</strong> ${translocation.project_title}</p>
+            <p><strong>Species:</strong> ${translocation.species}</p>
             <p><strong>Animals:</strong> ${translocation.number_of_animals}</p>
-            <p><strong>Date:</strong> ${translocation.month}/${translocation.year}</p>
-            <p><strong>Transport:</strong> ${getTransportIcon(translocation.transport_mode)} ${translocation.transport_mode.charAt(0).toUpperCase() + translocation.transport_mode.slice(1)}</p>
+            <p><strong>Year:</strong> ${translocation.year}</p>
+            <p><strong>Transport:</strong> ${getTransportIcon(translocation.transport)} ${translocation.transport}</p>
             <p><strong>Role:</strong> Source Location</p>
-            ${translocation.additional_notes ? `<p><strong>Notes:</strong> ${translocation.additional_notes}</p>` : ''}
+            ${translocation.special_project ? `<p><strong>Special Project:</strong> ${translocation.special_project}</p>` : ''}
+            ${translocation.additional_info ? `<p><strong>Notes:</strong> ${translocation.additional_info}</p>` : ''}
           </div>
         `;
 
         const destPopupContent = `
           <div style="padding: 8px; min-width: 200px;">
-            <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">${translocation.recipient_reserve.name}</h3>
-            <p><strong>Species:</strong> ${translocation.species.charAt(0).toUpperCase() + translocation.species.slice(1)}</p>
+            <h3 style="font-weight: bold; font-size: 16px; margin-bottom: 8px;">${translocation.recipient_area.name}</h3>
+            <p><strong>Project:</strong> ${translocation.project_title}</p>
+            <p><strong>Species:</strong> ${translocation.species}</p>
             <p><strong>Animals:</strong> ${translocation.number_of_animals}</p>
-            <p><strong>Date:</strong> ${translocation.month}/${translocation.year}</p>
-            <p><strong>Transport:</strong> ${getTransportIcon(translocation.transport_mode)} ${translocation.transport_mode.charAt(0).toUpperCase() + translocation.transport_mode.slice(1)}</p>
+            <p><strong>Year:</strong> ${translocation.year}</p>
+            <p><strong>Transport:</strong> ${getTransportIcon(translocation.transport)} ${translocation.transport}</p>
             <p><strong>Role:</strong> Destination Location</p>
-            ${translocation.additional_notes ? `<p><strong>Notes:</strong> ${translocation.additional_notes}</p>` : ''}
+            ${translocation.special_project ? `<p><strong>Special Project:</strong> ${translocation.special_project}</p>` : ''}
+            ${translocation.additional_info ? `<p><strong>Notes:</strong> ${translocation.additional_info}</p>` : ''}
           </div>
         `;
 
