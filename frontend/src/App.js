@@ -382,9 +382,9 @@ const TranslocationForm = ({ onSubmit }) => {
 
       <button
         type="submit"
-        className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
+        className="w-full bg-nature-green text-white py-3 px-4 rounded-md hover:bg-forest-green transition-colors shadow-lg font-semibold"
       >
-        Add Translocation
+        🌿 Add Conservation Record
       </button>
     </form>
   );
