@@ -369,111 +369,74 @@ const Map = ({ translocations, filteredTranslocations }) => {
   return <div id="map" className="w-full h-96 rounded-lg shadow-lg"></div>;
 };
 
-const TranslocationForm = ({ onSubmit }) => {
+const TranslocationForm = ({ onSubmit, editingTranslocation, onCancel }) => {
   const [formData, setFormData] = useState({
-    species: 'elephant',
-    number_of_animals: '',
-    month: '',
+    project_title: '',
     year: '',
-    source_reserve: {
+    species: 'Elephant',
+    number_of_animals: '',
+    source_area: {
       name: '',
-      country: '',
-      latitude: '',
-      longitude: ''
+      coordinates: '',
+      country: ''
     },
-    recipient_reserve: {
+    recipient_area: {
       name: '',
-      country: '',
-      latitude: '',
-      longitude: ''
+      coordinates: '',
+      country: ''
     },
-    transport_mode: 'road',
-    additional_notes: ''
+    transport: 'Road',
+    special_project: '',
+    additional_info: ''
   });
+
+  useEffect(() => {
+    if (editingTranslocation) {
+      setFormData(editingTranslocation);
+    }
+  }, [editingTranslocation]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const submitData = {
       ...formData,
       number_of_animals: parseInt(formData.number_of_animals),
-      month: parseInt(formData.month),
-      year: parseInt(formData.year),
-      source_reserve: {
-        ...formData.source_reserve,
-        latitude: parseFloat(formData.source_reserve.latitude),
-        longitude: parseFloat(formData.source_reserve.longitude)
-      },
-      recipient_reserve: {
-        ...formData.recipient_reserve,
-        latitude: parseFloat(formData.recipient_reserve.latitude),
-        longitude: parseFloat(formData.recipient_reserve.longitude)
-      }
+      year: parseInt(formData.year)
     };
     onSubmit(submitData);
-    setFormData({
-      species: 'elephant',
-      number_of_animals: '',
-      month: '',
-      year: '',
-      source_reserve: { name: '', country: '', latitude: '', longitude: '' },
-      recipient_reserve: { name: '', country: '', latitude: '', longitude: '' },
-      transport_mode: 'road',
-      additional_notes: ''
-    });
+    if (!editingTranslocation) {
+      setFormData({
+        project_title: '',
+        year: '',
+        species: 'Elephant',
+        number_of_animals: '',
+        source_area: { name: '', coordinates: '', country: '' },
+        recipient_area: { name: '', coordinates: '', country: '' },
+        transport: 'Road',
+        special_project: '',
+        additional_info: ''
+      });
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-lg space-y-4 border-l-4 border-nature-green">
       <h3 className="text-xl font-bold mb-4 text-forest-dark flex items-center">
         <span className="text-2xl mr-2">🌿</span>
-        Add New Conservation Record
+        {editingTranslocation ? 'Edit Conservation Record' : 'Add New Conservation Record'}
       </h3>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium mb-1">Species *</label>
-          <select
-            value={formData.species}
-            onChange={(e) => setFormData({...formData, species: e.target.value})}
-            className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
-            required
-          >
-            <option value="elephant">Elephant</option>
-            <option value="rhino">Rhino</option>
-            <option value="lion">Lion</option>
-            <option value="cheetah">Cheetah</option>
-            <option value="buffalo">Buffalo</option>
-            <option value="giraffe">Giraffe</option>
-            <option value="zebra">Zebra</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Number of Animals *</label>
+          <label className="block text-sm font-medium mb-1">Project Title *</label>
           <input
-            type="number"
-            value={formData.number_of_animals}
-            onChange={(e) => setFormData({...formData, number_of_animals: e.target.value})}
+            type="text"
+            value={formData.project_title}
+            onChange={(e) => setFormData({...formData, project_title: e.target.value})}
             className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
             required
-            min="1"
+            placeholder="e.g., 500 Elephants, Rhino Relocation"
           />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Month *</label>
-          <select
-            value={formData.month}
-            onChange={(e) => setFormData({...formData, month: e.target.value})}
-            className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
-            required
-          >
-            <option value="">Select Month</option>
-            {Array.from({length: 12}, (_, i) => (
-              <option key={i+1} value={i+1}>{new Date(2000, i).toLocaleString('default', { month: 'long' })}</option>
-            ))}
-          </select>
         </div>
 
         <div>
@@ -488,116 +451,157 @@ const TranslocationForm = ({ onSubmit }) => {
             max="2030"
           />
         </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Species *</label>
+          <select
+            value={formData.species}
+            onChange={(e) => setFormData({...formData, species: e.target.value})}
+            className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
+            required
+          >
+            <option value="Elephant">🐘 Elephant</option>
+            <option value="Black Rhino">🦏 Black Rhino</option>
+            <option value="White Rhino">🦏 White Rhino</option>
+            <option value="Lion">🦁 Lion</option>
+            <option value="Buffalo">🐃 Buffalo</option>
+            <option value="Impala">🦌 Impala</option>
+            <option value="Sable">🦌 Sable</option>
+            <option value="Kudu">🦌 Kudu</option>
+            <option value="Warthog">🐗 Warthog</option>
+            <option value="Waterbuck">🦌 Waterbuck</option>
+            <option value="Eland">🦌 Eland</option>
+            <option value="Zebra">🦓 Zebra</option>
+            <option value="Other">🦌 Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Number of Animals *</label>
+          <input
+            type="number"
+            value={formData.number_of_animals}
+            onChange={(e) => setFormData({...formData, number_of_animals: e.target.value})}
+            className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
+            required
+            min="1"
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-3">
-          <h4 className="font-medium text-lg">Source Reserve</h4>
+          <h4 className="font-medium text-lg">Source Area</h4>
           <input
             type="text"
-            placeholder="Reserve Name *"
-            value={formData.source_reserve.name}
-            onChange={(e) => setFormData({...formData, source_reserve: {...formData.source_reserve, name: e.target.value}})}
+            placeholder="Source Area Name *"
+            value={formData.source_area.name}
+            onChange={(e) => setFormData({...formData, source_area: {...formData.source_area, name: e.target.value}})}
             className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
             required
+          />
+          <input
+            type="text"
+            placeholder="Coordinates (lat, lng)"
+            value={formData.source_area.coordinates}
+            onChange={(e) => setFormData({...formData, source_area: {...formData.source_area, coordinates: e.target.value}})}
+            className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
           />
           <input
             type="text"
             placeholder="Country *"
-            value={formData.source_reserve.country}
-            onChange={(e) => setFormData({...formData, source_reserve: {...formData.source_reserve, country: e.target.value}})}
-            className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
-            required
-          />
-          <input
-            type="number"
-            step="any"
-            placeholder="Latitude *"
-            value={formData.source_reserve.latitude}
-            onChange={(e) => setFormData({...formData, source_reserve: {...formData.source_reserve, latitude: e.target.value}})}
-            className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
-            required
-          />
-          <input
-            type="number"
-            step="any"
-            placeholder="Longitude *"
-            value={formData.source_reserve.longitude}
-            onChange={(e) => setFormData({...formData, source_reserve: {...formData.source_reserve, longitude: e.target.value}})}
+            value={formData.source_area.country}
+            onChange={(e) => setFormData({...formData, source_area: {...formData.source_area, country: e.target.value}})}
             className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
             required
           />
         </div>
 
         <div className="space-y-3">
-          <h4 className="font-medium text-lg">Recipient Reserve</h4>
+          <h4 className="font-medium text-lg">Recipient Area</h4>
           <input
             type="text"
-            placeholder="Reserve Name *"
-            value={formData.recipient_reserve.name}
-            onChange={(e) => setFormData({...formData, recipient_reserve: {...formData.recipient_reserve, name: e.target.value}})}
+            placeholder="Recipient Area Name *"
+            value={formData.recipient_area.name}
+            onChange={(e) => setFormData({...formData, recipient_area: {...formData.recipient_area, name: e.target.value}})}
             className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
             required
+          />
+          <input
+            type="text"
+            placeholder="Coordinates (lat, lng)"
+            value={formData.recipient_area.coordinates}
+            onChange={(e) => setFormData({...formData, recipient_area: {...formData.recipient_area, coordinates: e.target.value}})}
+            className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
           />
           <input
             type="text"
             placeholder="Country *"
-            value={formData.recipient_reserve.country}
-            onChange={(e) => setFormData({...formData, recipient_reserve: {...formData.recipient_reserve, country: e.target.value}})}
-            className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
-            required
-          />
-          <input
-            type="number"
-            step="any"
-            placeholder="Latitude *"
-            value={formData.recipient_reserve.latitude}
-            onChange={(e) => setFormData({...formData, recipient_reserve: {...formData.recipient_reserve, latitude: e.target.value}})}
-            className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
-            required
-          />
-          <input
-            type="number"
-            step="any"
-            placeholder="Longitude *"
-            value={formData.recipient_reserve.longitude}
-            onChange={(e) => setFormData({...formData, recipient_reserve: {...formData.recipient_reserve, longitude: e.target.value}})}
+            value={formData.recipient_area.country}
+            onChange={(e) => setFormData({...formData, recipient_area: {...formData.recipient_area, country: e.target.value}})}
             className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
             required
           />
         </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1">Transport Mode *</label>
-        <select
-          value={formData.transport_mode}
-          onChange={(e) => setFormData({...formData, transport_mode: e.target.value})}
-          className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
-          required
-        >
-          <option value="road">Road (Truck) 🚛</option>
-          <option value="air">Air (Plane) ✈️</option>
-        </select>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium mb-1">Transport *</label>
+          <select
+            value={formData.transport}
+            onChange={(e) => setFormData({...formData, transport: e.target.value})}
+            className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
+            required
+          >
+            <option value="Road">Road 🚛</option>
+            <option value="Air">Air ✈️</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Special Project</label>
+          <select
+            value={formData.special_project}
+            onChange={(e) => setFormData({...formData, special_project: e.target.value})}
+            className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
+          >
+            <option value="">None</option>
+            <option value="Peace Parks">Peace Parks</option>
+            <option value="African Parks">African Parks</option>
+            <option value="Rhino Rewild">Rhino Rewild</option>
+          </select>
+        </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1">Additional Notes</label>
+        <label className="block text-sm font-medium mb-1">Additional Information</label>
         <textarea
-          value={formData.additional_notes}
-          onChange={(e) => setFormData({...formData, additional_notes: e.target.value})}
+          value={formData.additional_info}
+          onChange={(e) => setFormData({...formData, additional_info: e.target.value})}
           className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
           rows="3"
           placeholder="Optional additional information..."
         />
       </div>
 
-      <button
-        type="submit"
-        className="w-full bg-nature-green text-white py-3 px-4 rounded-md hover:bg-forest-green transition-colors shadow-lg font-semibold"
-      >
-        🌿 Add Conservation Record
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          className="flex-1 bg-nature-green text-white py-3 px-4 rounded-md hover:bg-forest-green transition-colors shadow-lg font-semibold"
+        >
+          🌿 {editingTranslocation ? 'Update' : 'Add'} Conservation Record
+        </button>
+        {editingTranslocation && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-3 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </form>
   );
 };
