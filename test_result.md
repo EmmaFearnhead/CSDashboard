@@ -201,9 +201,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Wildlife translocation data model and API endpoints"
-    - "Sample data creation endpoint"
-  stuck_tasks: []
+    - "OpenStreetMap integration with translocation visualization"
+  stuck_tasks:
+    - "OpenStreetMap integration with translocation visualization"
   test_all: false
   test_priority: "high_first"
 
