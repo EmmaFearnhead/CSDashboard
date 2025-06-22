@@ -258,20 +258,20 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
             const lat = parseFloat(coords[0].trim());
             const lng = parseFloat(coords[1].trim());
             
-            // Validate coordinates are reasonable for Africa
-            // Africa latitude range: roughly -35 to 37
-            // Africa longitude range: roughly -20 to 52
-            if (!isNaN(lat) && !isNaN(lng) && 
-                lat >= -40 && lat <= 40 && 
-                lng >= -25 && lng <= 55) {
+            console.log(`Parsing: "${coordString}" → lat: ${lat}, lng: ${lng}`);
+            
+            // Validate that we have valid numbers
+            if (!isNaN(lat) && !isNaN(lng)) {
+              // For debugging: accept any valid coordinates temporarily
+              console.log(`✅ Valid coordinates: [${lat}, ${lng}]`);
               return [lat, lng];
             } else {
-              console.warn('Coordinates outside Africa range:', coordString, 'parsed as:', [lat, lng]);
+              console.warn('❌ NaN coordinates:', coordString, 'parsed as:', [lat, lng]);
               return [0, 0];
             }
           }
         } catch (error) {
-          console.error('Error parsing coordinates:', coordString, error);
+          console.error('❌ Error parsing coordinates:', coordString, error);
         }
         return [0, 0];
       };
