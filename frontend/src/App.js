@@ -613,16 +613,41 @@ function App() {
               </h3>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 rounded-full border-2 border-white opacity-80" style={{backgroundColor: '#8B4513'}}></div>
+                  <div className="w-4 h-4 rounded-full border-2 border-white opacity-80" style={{backgroundColor: '#228B22'}}></div>
                   <span className="text-forest-dark">Source Location</span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <div className="w-4 h-4 rounded-full border-2 border-black" style={{backgroundColor: '#8B4513'}}></div>
+                  <div className="w-4 h-4 rounded-full border-2 border-black" style={{backgroundColor: '#228B22'}}></div>
                   <span className="text-forest-dark">Destination Location</span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-1 opacity-60" style={{backgroundColor: '#8B4513'}}></div>
+                  <div className="w-8 h-1 opacity-60" style={{backgroundColor: '#228B22'}}></div>
                   <span className="text-forest-dark">Translocation Route</span>
+                </div>
+                <div className="mt-4 p-2 bg-nature-light rounded">
+                  <div className="text-xs text-nature-brown mb-2">Species Color Legend:</div>
+                  <div className="grid grid-cols-1 gap-1 text-xs">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full" style={{backgroundColor: '#228B22'}}></div>
+                      <span>Elephant</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full" style={{backgroundColor: '#006400'}}></div>
+                      <span>Black Rhino</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full" style={{backgroundColor: '#90EE90'}}></div>
+                      <span>White Rhino</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full" style={{backgroundColor: '#32CD32'}}></div>
+                      <span>Plains Game Species</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 rounded-full" style={{backgroundColor: '#8FBC8F'}}></div>
+                      <span>Other Species</span>
+                    </div>
+                  </div>
                 </div>
                 <div className="mt-4 text-xs text-nature-brown bg-nature-light p-2 rounded">
                   Click map markers for detailed information about each translocation
