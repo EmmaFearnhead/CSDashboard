@@ -406,18 +406,21 @@ const StatsPanel = ({ stats }) => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-lg">
-      <h3 className="text-xl font-bold mb-4">Conservation Impact</h3>
+    <div className="bg-white p-6 rounded-lg nature-shadow-lg border-l-4 border-forest-green">
+      <h3 className="text-xl font-bold mb-4 text-forest-dark flex items-center">
+        <span className="text-2xl mr-2">🌍</span>
+        Conservation Impact
+      </h3>
       <div className="space-y-3">
         {Object.entries(stats).map(([species, data]) => (
-          <div key={species} className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
-            <div className="flex items-center space-x-2">
+          <div key={species} className="stats-item flex justify-between items-center p-3 rounded-md">
+            <div className="flex items-center space-x-3">
               <span className="text-2xl">{speciesEmojis[species] || '🦌'}</span>
-              <span className="font-medium capitalize">{species}</span>
+              <span className="font-medium capitalize text-forest-dark">{species}</span>
             </div>
             <div className="text-right">
-              <div className="text-lg font-bold text-green-600">{data.total_animals}</div>
-              <div className="text-sm text-gray-500">{data.total_translocations} translocations</div>
+              <div className="text-lg font-bold text-nature-green">{data.total_animals}</div>
+              <div className="text-sm text-nature-brown">{data.total_translocations} translocations</div>
             </div>
           </div>
         ))}
