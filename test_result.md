@@ -205,8 +205,7 @@ metadata:
 test_plan:
   current_focus:
     - "OpenStreetMap integration with translocation visualization"
-  stuck_tasks:
-    - "OpenStreetMap integration with translocation visualization"
+  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
