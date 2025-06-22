@@ -451,7 +451,6 @@ async def import_excel_file(file: UploadFile = File(...)):
             except Exception as row_error:
                 error_msg = f"Error processing row {index+1}: {str(row_error)}"
                 print(f"ERROR: {error_msg}")
-                print(f"Full traceback: {traceback.format_exc()}")
                 errors.append(error_msg)
                 continue  # Skip problematic rows but continue processing
         
