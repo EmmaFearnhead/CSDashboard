@@ -27,46 +27,58 @@ api_router = APIRouter(prefix="/api")
 
 # Enums
 class TransportMode(str, Enum):
-    ROAD = "road"
-    AIR = "air"
+    ROAD = "Road"
+    AIR = "Air"
 
 class Species(str, Enum):
-    ELEPHANT = "elephant"
-    RHINO = "rhino"
-    LION = "lion"
-    CHEETAH = "cheetah"
-    BUFFALO = "buffalo"
-    GIRAFFE = "giraffe"
-    ZEBRA = "zebra"
-    OTHER = "other"
+    ELEPHANT = "Elephant"
+    BLACK_RHINO = "Black Rhino"
+    WHITE_RHINO = "White Rhino"
+    LION = "Lion"
+    BUFFALO = "Buffalo"
+    IMPALA = "Impala"
+    SABLE = "Sable"
+    KUDU = "Kudu"
+    WARTHOG = "Warthog"
+    WATERBUCK = "Waterbuck"
+    ELAND = "Eland"
+    ZEBRA = "Zebra"
+    OTHER = "Other"
+
+class SpecialProject(str, Enum):
+    PEACE_PARKS = "Peace Parks"
+    AFRICAN_PARKS = "African Parks"
+    RHINO_REWILD = "Rhino Rewild"
+    NONE = ""
 
 # Define Models
 class Location(BaseModel):
     name: str
+    coordinates: str
     country: str
-    latitude: float
-    longitude: float
 
 class TranslocationCreate(BaseModel):
+    project_title: str
+    year: int
     species: Species
     number_of_animals: int
-    month: int = Field(ge=1, le=12)
-    year: int
-    source_reserve: Location
-    recipient_reserve: Location
-    transport_mode: TransportMode
-    additional_notes: Optional[str] = ""
+    source_area: Location
+    recipient_area: Location
+    transport: TransportMode
+    special_project: Optional[SpecialProject] = SpecialProject.NONE
+    additional_info: Optional[str] = ""
 
 class Translocation(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    project_title: str
+    year: int
     species: Species
     number_of_animals: int
-    month: int
-    year: int
-    source_reserve: Location
-    recipient_reserve: Location
-    transport_mode: TransportMode
-    additional_notes: str
+    source_area: Location
+    recipient_area: Location
+    transport: TransportMode
+    special_project: SpecialProject
+    additional_info: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 # Routes
