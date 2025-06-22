@@ -1002,7 +1002,6 @@ function App() {
           <div className="lg:col-span-2">
             <div className="bg-white p-6 rounded-lg nature-shadow-lg border-l-4 border-nature-green">
               <h2 className="text-2xl font-bold mb-4 text-forest-dark flex items-center">
-                <span className="text-3xl mr-3">🗺️</span>
                 Wildlife Translocation Map
               </h2>
               {filteredTranslocations.length > 0 ? (
