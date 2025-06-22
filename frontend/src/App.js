@@ -273,7 +273,7 @@ const TranslocationForm = ({ onSubmit }) => {
             type="number"
             value={formData.year}
             onChange={(e) => setFormData({...formData, year: e.target.value})}
-            className="w-full border rounded-md px-3 py-2"
+            className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
             required
             min="2000"
             max="2030"
