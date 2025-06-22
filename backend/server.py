@@ -72,6 +72,9 @@ async def health_check():
 async def get_translocations():
     translocations = []
     async for translocation in db.translocations.find():
+        # Remove MongoDB ObjectId for JSON serialization
+        if '_id' in translocation:
+            del translocation['_id']
         translocations.append(translocation)
     return translocations
 
