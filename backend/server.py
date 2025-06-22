@@ -350,13 +350,6 @@ async def import_excel_file(file: UploadFile = File(...)):
                 dest_name_val = row[dest_name_col] if dest_name_col and not pd.isna(row[dest_name_col]) else None
                 dest_name = str(dest_name_val).strip() if dest_name_val is not None else "Unknown Destination"
                 
-                source_country_val = row[source_country_col] if source_country_col and not pd.isna(row[source_country_col]) else None
-                source_country = str(source_country_val).strip() if source_country_val is not None else "Unknown"
-                
-                # Destination area - preserve exact names from spreadsheet
-                dest_name_val = row[dest_name_col] if dest_name_col and not pd.isna(row[dest_name_col]) else None
-                dest_name = str(dest_name_val).strip() if dest_name_val is not None else "Unknown Destination"
-                
                 # Destination coordinates - exact same processing as source
                 dest_coords = "0, 0"
                 if dest_coord_col and not pd.isna(row[dest_coord_col]):
