@@ -246,7 +246,7 @@ const TranslocationForm = ({ onSubmit }) => {
             type="number"
             value={formData.number_of_animals}
             onChange={(e) => setFormData({...formData, number_of_animals: e.target.value})}
-            className="w-full border rounded-md px-3 py-2"
+            className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
             required
             min="1"
           />
