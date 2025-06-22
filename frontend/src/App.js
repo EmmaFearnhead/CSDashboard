@@ -501,19 +501,19 @@ const TranslocationForm = ({ onSubmit, editingTranslocation, onCancel }) => {
             className="w-full border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
             required
           >
-            <option value="Elephant">🐘 Elephant</option>
-            <option value="Black Rhino">🦏 Black Rhino</option>
-            <option value="White Rhino">🦏 White Rhino</option>
-            <option value="Lion">🦁 Lion</option>
-            <option value="Buffalo">🐃 Buffalo</option>
-            <option value="Impala">🦌 Impala</option>
-            <option value="Sable">🦌 Sable</option>
-            <option value="Kudu">🦌 Kudu</option>
-            <option value="Warthog">🐗 Warthog</option>
-            <option value="Waterbuck">🦌 Waterbuck</option>
-            <option value="Eland">🦌 Eland</option>
-            <option value="Zebra">🦓 Zebra</option>
-            <option value="Other">🦌 Other</option>
+            <option value="Elephant">Elephant</option>
+            <option value="Black Rhino">Black Rhino</option>
+            <option value="White Rhino">White Rhino</option>
+            <option value="Lion">Lion</option>
+            <option value="Buffalo">Buffalo</option>
+            <option value="Impala">Impala</option>
+            <option value="Sable">Sable</option>
+            <option value="Kudu">Kudu</option>
+            <option value="Warthog">Warthog</option>
+            <option value="Waterbuck">Waterbuck</option>
+            <option value="Eland">Eland</option>
+            <option value="Zebra">Zebra</option>
+            <option value="Other">Other</option>
           </select>
         </div>
 
