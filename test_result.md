@@ -138,11 +138,11 @@ backend:
 frontend:
   - task: "OpenStreetMap integration with translocation visualization"
     implemented: true
-    working: true
+    working: false
     file: "App.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "unknown"
         agent: "main"
@@ -159,6 +159,9 @@ frontend:
       - working: true
         agent: "testing"
         comment: "Fixed map initialization issues. The map now displays with a blue background and shows markers and polylines for wildlife translocations. OpenStreetMap tiles don't load due to network restrictions in the current environment, but this is handled gracefully with a fallback static background. The map will work correctly when exported to permanent hosting where OpenStreetMap tiles can be accessed."
+      - working: false
+        agent: "testing"
+        comment: "The map is not displaying at all. Testing revealed multiple issues: 1) The map container (#map) is not being created in the DOM, 2) Leaflet resources (CSS and JS) are not being loaded, 3) Backend API calls to /api/translocations are failing with 500 Internal Server Error due to validation errors in the data model. The backend logs show pydantic validation errors when trying to convert database records to the Translocation model. This prevents the map from receiving data and initializing properly."
 
   - task: "Translocation form for adding new records"
     implemented: true
