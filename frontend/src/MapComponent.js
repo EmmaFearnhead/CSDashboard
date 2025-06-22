@@ -248,7 +248,9 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
 
     const bounds = [];
 
-    filteredTranslocations.forEach((translocation) => {
+    filteredTranslocations.forEach((translocation, index) => {
+      console.log(`🗺️ PROCESSING ${index + 1}/${filteredTranslocations.length}: ${translocation.project_title}`);
+      
       // Parse coordinates - SIMPLE and DIRECT for Google Maps format
       const parseCoordinates = (coordString) => {
         if (!coordString || coordString === "" || coordString === "0, 0") return [0, 0];
