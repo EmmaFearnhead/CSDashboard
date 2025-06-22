@@ -1,0 +1,3 @@
+Project Title,Year,Species,Number,Source Area: Name,Source Area: Co-Ordinates,Source Area: Country,Recipient Area: Name,Recipient Area: Co-Ordinates,Recipient Area: Country,Transport,Special Project,Additional Info
+Test Excel Upload,2024,Elephant,15,Test Excel Source,"-27.808400634565363, 32.34692072433984",South Africa,Test Excel Destination,"-25.1234, 30.5678",Botswana,Road,African Parks,Testing Excel upload with Google Maps coordinates
+Excel Test 2,2023,White Rhino,8,Another Excel Source,"-24.5555, 29.8888",South Africa,Another Excel Destination,"-23.1111, 32.4444",Namibia,Air,,Second Excel test record
