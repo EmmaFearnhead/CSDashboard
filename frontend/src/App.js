@@ -64,6 +64,17 @@ const Map = ({ translocations, filteredTranslocations }) => {
           mapRef.current = null;
         }
         
+        // Create a static background for the map
+        const staticBackground = document.createElement('div');
+        staticBackground.style.width = '100%';
+        staticBackground.style.height = '100%';
+        staticBackground.style.backgroundColor = '#a0c8f0';
+        staticBackground.style.position = 'absolute';
+        staticBackground.style.top = '0';
+        staticBackground.style.left = '0';
+        staticBackground.style.zIndex = '0';
+        mapContainer.appendChild(staticBackground);
+        
         // Initialize map centered on Africa
         map = window.L.map('map', {
           attributionControl: true,
@@ -77,7 +88,15 @@ const Map = ({ translocations, filteredTranslocations }) => {
         // Store the map instance in the ref
         mapRef.current = map;
         
-        // Add OpenStreetMap tiles with fallback
+        // Add a static background layer to the map
+        window.L.rectangle([[-90, -180], [90, 180]], {
+          color: "#a0c8f0",
+          weight: 1,
+          fillColor: "#a0c8f0",
+          fillOpacity: 1
+        }).addTo(map);
+        
+        // Try to add OpenStreetMap tiles, but don't worry if it fails
         try {
           window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -85,26 +104,10 @@ const Map = ({ translocations, filteredTranslocations }) => {
           }).addTo(map);
         } catch (error) {
           console.error('Failed to load OpenStreetMap tiles:', error);
-          
-          // Try alternative tile provider as fallback
-          try {
-            window.L.tileLayer('https://tile.openstreetmap.de/{z}/{x}/{y}.png', {
-              attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-              maxZoom: 18,
-            }).addTo(map);
-          } catch (fallbackError) {
-            console.error('Failed to load fallback tiles:', fallbackError);
-            
-            // Last resort - use a static color background
-            window.L.rectangle([[-90, -180], [90, 180]], {
-              color: "#a0c8f0",
-              weight: 1,
-              fillColor: "#f0f0f0",
-              fillOpacity: 1
-            }).addTo(map);
-          }
+          // We already have a static background, so no need for a fallback
         }
         
+        // Add markers and polylines
         updateMapMarkers();
       } catch (error) {
         console.error('Error initializing map:', error);
@@ -117,7 +120,8 @@ const Map = ({ translocations, filteredTranslocations }) => {
       
       // Clear existing markers and layers
       mapRef.current.eachLayer(layer => {
-        if (layer instanceof window.L.Marker || layer instanceof window.L.Polyline) {
+        if (layer instanceof window.L.Marker || 
+            (layer instanceof window.L.Polyline && !(layer instanceof window.L.Rectangle))) {
           mapRef.current.removeLayer(layer);
         }
       });
@@ -139,20 +143,15 @@ const Map = ({ translocations, filteredTranslocations }) => {
         return mode === 'air' ? '✈️' : '🚛';
       };
 
-      // Create marker icon function
-      const createMarkerIcon = (color, isSource = true) => {
-        return window.L.divIcon({
-          html: `<div style="
-            background-color: ${color};
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            border: ${isSource ? '2px solid #ffffff' : '2px solid #000000'};
-            opacity: ${isSource ? '0.8' : '1'};
-          "></div>`,
-          className: 'custom-div-icon',
-          iconSize: [16, 16],
-          iconAnchor: [8, 8]
+      // Create marker icon function - using simple circle markers instead of divIcons
+      const createMarker = (latlng, color, isSource = true) => {
+        return window.L.circleMarker(latlng, {
+          radius: 8,
+          fillColor: color,
+          color: isSource ? '#ffffff' : '#000000',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.8
         });
       };
 
@@ -165,16 +164,22 @@ const Map = ({ translocations, filteredTranslocations }) => {
         const destLng = translocation.recipient_reserve.longitude;
 
         // Source marker
-        const sourceMarker = window.L.marker([sourceLat, sourceLng], {
-          icon: createMarkerIcon(speciesColors[translocation.species], true),
-          title: `Source: ${translocation.source_reserve.name}`
-        }).addTo(mapRef.current);
+        const sourceMarker = createMarker(
+          [sourceLat, sourceLng], 
+          speciesColors[translocation.species], 
+          true
+        ).addTo(mapRef.current);
+        
+        sourceMarker.bindTooltip(`Source: ${translocation.source_reserve.name}`);
 
         // Destination marker
-        const destMarker = window.L.marker([destLat, destLng], {
-          icon: createMarkerIcon(speciesColors[translocation.species], false),
-          title: `Destination: ${translocation.recipient_reserve.name}`
-        }).addTo(mapRef.current);
+        const destMarker = createMarker(
+          [destLat, destLng], 
+          speciesColors[translocation.species], 
+          false
+        ).addTo(mapRef.current);
+        
+        destMarker.bindTooltip(`Destination: ${translocation.recipient_reserve.name}`);
 
         // Connection line
         const polyline = window.L.polyline([[sourceLat, sourceLng], [destLat, destLng]], {
@@ -217,7 +222,13 @@ const Map = ({ translocations, filteredTranslocations }) => {
 
       // Fit map to show all markers
       if (bounds.length > 0) {
-        mapRef.current.fitBounds(bounds, { padding: [20, 20] });
+        try {
+          mapRef.current.fitBounds(bounds, { padding: [20, 20] });
+        } catch (error) {
+          console.error('Error fitting bounds:', error);
+          // If fitting bounds fails, just set the view to Africa
+          mapRef.current.setView([-15, 25], 4);
+        }
       }
     };
     
@@ -235,10 +246,13 @@ const Map = ({ translocations, filteredTranslocations }) => {
   
   // Update markers when filtered data changes
   useEffect(() => {
-    if (mapRef.current) {
+    if (!mapRef.current) return;
+    
+    try {
       // Clear existing markers and layers
       mapRef.current.eachLayer(layer => {
-        if (layer instanceof window.L.Marker || layer instanceof window.L.Polyline) {
+        if (layer instanceof window.L.Marker || 
+            (layer instanceof window.L.Polyline && !(layer instanceof window.L.Rectangle))) {
           mapRef.current.removeLayer(layer);
         }
       });
@@ -260,20 +274,15 @@ const Map = ({ translocations, filteredTranslocations }) => {
         return mode === 'air' ? '✈️' : '🚛';
       };
 
-      // Create marker icon function
-      const createMarkerIcon = (color, isSource = true) => {
-        return window.L.divIcon({
-          html: `<div style="
-            background-color: ${color};
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            border: ${isSource ? '2px solid #ffffff' : '2px solid #000000'};
-            opacity: ${isSource ? '0.8' : '1'};
-          "></div>`,
-          className: 'custom-div-icon',
-          iconSize: [16, 16],
-          iconAnchor: [8, 8]
+      // Create marker icon function - using simple circle markers instead of divIcons
+      const createMarker = (latlng, color, isSource = true) => {
+        return window.L.circleMarker(latlng, {
+          radius: 8,
+          fillColor: color,
+          color: isSource ? '#ffffff' : '#000000',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.8
         });
       };
 
@@ -286,16 +295,22 @@ const Map = ({ translocations, filteredTranslocations }) => {
         const destLng = translocation.recipient_reserve.longitude;
 
         // Source marker
-        const sourceMarker = window.L.marker([sourceLat, sourceLng], {
-          icon: createMarkerIcon(speciesColors[translocation.species], true),
-          title: `Source: ${translocation.source_reserve.name}`
-        }).addTo(mapRef.current);
+        const sourceMarker = createMarker(
+          [sourceLat, sourceLng], 
+          speciesColors[translocation.species], 
+          true
+        ).addTo(mapRef.current);
+        
+        sourceMarker.bindTooltip(`Source: ${translocation.source_reserve.name}`);
 
         // Destination marker
-        const destMarker = window.L.marker([destLat, destLng], {
-          icon: createMarkerIcon(speciesColors[translocation.species], false),
-          title: `Destination: ${translocation.recipient_reserve.name}`
-        }).addTo(mapRef.current);
+        const destMarker = createMarker(
+          [destLat, destLng], 
+          speciesColors[translocation.species], 
+          false
+        ).addTo(mapRef.current);
+        
+        destMarker.bindTooltip(`Destination: ${translocation.recipient_reserve.name}`);
 
         // Connection line
         const polyline = window.L.polyline([[sourceLat, sourceLng], [destLat, destLng]], {
@@ -338,8 +353,16 @@ const Map = ({ translocations, filteredTranslocations }) => {
 
       // Fit map to show all markers
       if (bounds.length > 0) {
-        mapRef.current.fitBounds(bounds, { padding: [20, 20] });
+        try {
+          mapRef.current.fitBounds(bounds, { padding: [20, 20] });
+        } catch (error) {
+          console.error('Error fitting bounds:', error);
+          // If fitting bounds fails, just set the view to Africa
+          mapRef.current.setView([-15, 25], 4);
+        }
       }
+    } catch (error) {
+      console.error('Error updating map markers:', error);
     }
   }, [filteredTranslocations]);
 
