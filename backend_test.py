@@ -133,17 +133,17 @@ def test_get_translocation_stats():
         stats = response.json()
         print(f"Statistics: {json.dumps(stats, indent=2)}")
         
-        # Verify Buffalo has the largest count
-        assert "Buffalo" in stats, "Buffalo should be in the statistics"
-        buffalo_count = stats["Buffalo"]["total_animals"]
+        # Verify Plains Game Species has the largest count
+        assert "Plains Game Species" in stats, "Plains Game Species should be in the statistics"
+        plains_game_count = stats["Plains Game Species"]["total_animals"]
         
         # Verify Elephant has the second largest count
         assert "Elephant" in stats, "Elephant should be in the statistics"
         elephant_count = stats["Elephant"]["total_animals"]
         
-        # Check if Buffalo has more animals than Elephant
-        print(f"Buffalo count: {buffalo_count}, Elephant count: {elephant_count}")
-        assert buffalo_count > elephant_count, f"Expected Buffalo count ({buffalo_count}) to be greater than Elephant count ({elephant_count})"
+        # Check if Plains Game Species has more animals than Elephant
+        print(f"Plains Game Species count: {plains_game_count}, Elephant count: {elephant_count}")
+        assert plains_game_count > elephant_count, f"Expected Plains Game Species count ({plains_game_count}) to be greater than Elephant count ({elephant_count})"
         
         # Verify that total_animals and total_translocations are integers for all species
         for species, species_stats in stats.items():
