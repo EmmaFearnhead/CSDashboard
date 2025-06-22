@@ -156,13 +156,13 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
       }
     });
     
-    // Species colors for simplified categorization
+    // Species colors for simplified categorization - GREEN CONSERVATION THEME
     const speciesColors = {
-      'Elephant': '#FF6B6B',           // Red
-      'Black Rhino': '#2C3E50',       // Dark blue
-      'White Rhino': '#95A5A6',       // Light gray
-      'Plains Game Species': '#27AE60', // Green
-      'Other': '#F39C12'              // Orange
+      'Elephant': '#228B22',           // Forest Green
+      'Black Rhino': '#006400',       // Dark Green  
+      'White Rhino': '#90EE90',       // Light Green
+      'Plains Game Species': '#32CD32', // Lime Green
+      'Other': '#8FBC8F'              // Dark Sea Green
     };
 
     // Transport mode icons
