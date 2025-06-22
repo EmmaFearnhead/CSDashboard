@@ -701,7 +701,7 @@ function App() {
 
   const importHistoricalData = async () => {
     try {
-      await axios.post(`${API}/translocations/import-complete-excel-data`);
+      await axios.post(`${API}/translocations/import-simplified-data`);
       fetchTranslocations();
       fetchStats();
     } catch (error) {
