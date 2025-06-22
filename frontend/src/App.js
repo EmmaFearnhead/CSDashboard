@@ -63,49 +63,104 @@ const Map = ({ translocations, filteredTranslocations }) => {
           mapRef.current.remove();
           mapRef.current = null;
         }
-        
-        // Create a static background for the map
-        const staticBackground = document.createElement('div');
-        staticBackground.style.width = '100%';
-        staticBackground.style.height = '100%';
-        staticBackground.style.backgroundColor = '#a0c8f0';
-        staticBackground.style.position = 'absolute';
-        staticBackground.style.top = '0';
-        staticBackground.style.left = '0';
-        staticBackground.style.zIndex = '0';
-        mapContainer.appendChild(staticBackground);
-        
-        // Initialize map centered on Africa
-        map = window.L.map('map', {
-          attributionControl: true,
+
+        // Create map centered on Africa
+        mapRef.current = window.L.map('map', {
           zoomControl: true,
-          doubleClickZoom: true,
           scrollWheelZoom: true,
+          doubleClickZoom: true,
+          boxZoom: true,
+          keyboard: true,
           dragging: true,
-          zoom: 4
+          touchZoom: true
         }).setView([-15, 25], 4);
-        
-        // Store the map instance in the ref
-        mapRef.current = map;
-        
-        // Add a static background layer to the map
-        window.L.rectangle([[-90, -180], [90, 180]], {
-          color: "#a0c8f0",
-          weight: 1,
-          fillColor: "#a0c8f0",
-          fillOpacity: 1
-        }).addTo(map);
-        
-        // Try to add OpenStreetMap tiles, but don't worry if it fails
-        try {
-          window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 18,
-          }).addTo(map);
-        } catch (error) {
-          console.error('Failed to load OpenStreetMap tiles:', error);
-          // We already have a static background, so no need for a fallback
-        }
+
+        // Try multiple tile layer providers for better compatibility
+        const tileLayerOptions = [
+          {
+            url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+          },
+          {
+            url: 'https://cartodb-basemaps-{s}.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png',
+            attribution: '© CartoDB, © OpenStreetMap contributors',
+            maxZoom: 19
+          },
+          {
+            url: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png',
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+          },
+          {
+            url: 'https://tiles.wmflabs.org/osm-no-labels/{z}/{x}/{y}.png',
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+          }
+        ];
+
+        // Function to try loading tiles with fallback
+        const loadTileLayer = (index = 0) => {
+          if (index >= tileLayerOptions.length) {
+            // If all tile providers fail, create a simple background
+            console.warn('All tile providers failed, using basic background');
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            
+            // Create a simple geographic background
+            const gradient = ctx.createLinearGradient(0, 0, 0, 256);
+            gradient.addColorStop(0, '#87CEEB'); // Sky blue
+            gradient.addColorStop(0.7, '#F0E68C'); // Khaki (land)
+            gradient.addColorStop(1, '#8FBC8F'); // Dark sea green
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 256, 256);
+            
+            // Add some geographic grid lines
+            ctx.strokeStyle = '#DDD';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 256; i += 32) {
+              ctx.beginPath();
+              ctx.moveTo(i, 0);
+              ctx.lineTo(i, 256);
+              ctx.moveTo(0, i);
+              ctx.lineTo(256, i);
+              ctx.stroke();
+            }
+            
+            const dataUrl = canvas.toDataURL();
+            
+            window.L.tileLayer(dataUrl, {
+              attribution: 'Basic Geographic Background',
+              maxZoom: 19,
+              tileSize: 256
+            }).addTo(mapRef.current);
+            return;
+          }
+
+          const tileLayer = window.L.tileLayer(tileLayerOptions[index].url, {
+            attribution: tileLayerOptions[index].attribution,
+            maxZoom: tileLayerOptions[index].maxZoom,
+            crossOrigin: true
+          });
+
+          tileLayer.on('tileerror', () => {
+            console.warn(`Tile provider ${index} failed, trying next...`);
+            tileLayer.remove();
+            loadTileLayer(index + 1);
+          });
+
+          tileLayer.on('tileload', () => {
+            console.log(`Successfully loaded tiles from provider ${index}`);
+          });
+
+          tileLayer.addTo(mapRef.current);
+        };
+
+        // Start loading tiles
+        loadTileLayer();
         
         // Add markers and polylines
         updateMapMarkers();
