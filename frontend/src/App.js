@@ -274,8 +274,10 @@ function App() {
   });
   const [showForm, setShowForm] = useState(false);
   const [showDataTable, setShowDataTable] = useState(false);
+  const [showFileUpload, setShowFileUpload] = useState(false);
   const [editingTranslocation, setEditingTranslocation] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [uploadLoading, setUploadLoading] = useState(false);
 
   const fetchTranslocations = async () => {
     try {
