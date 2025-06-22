@@ -5,7 +5,7 @@ import sys
 from datetime import datetime
 
 # Get the backend URL from the frontend .env file
-BACKEND_URL = "https://2ed0e74d-2c6b-4d76-b4aa-7ab4911080e6.preview.emergentagent.com"
+BACKEND_URL = "https://999caf0b-2699-456b-bed8-df8245ee1a85.preview.emergentagent.com"
 API_URL = f"{BACKEND_URL}/api"
 
 def print_separator():
