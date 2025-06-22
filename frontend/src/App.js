@@ -1009,15 +1009,14 @@ function App() {
               ) : (
                 <div className="w-full h-96 bg-nature-light rounded-lg flex items-center justify-center border-2 border-sage-green">
                   <div className="text-center">
-                    <div className="text-6xl mb-4">🌿</div>
                     <div className="text-nature-brown text-lg font-medium mb-2">No translocations to display</div>
-                    <div className="text-nature-brown text-sm mb-4">Load sample data to see conservation efforts across Africa</div>
+                    <div className="text-nature-brown text-sm mb-4">Load historical data to see conservation efforts across Africa</div>
                     {translocations.length === 0 && (
                       <button
                         onClick={importHistoricalData}
                         className="bg-forest-green text-white px-6 py-3 rounded-md hover:bg-forest-dark transition-colors shadow-md"
                       >
-                        🌍 Load Sample Data
+                        Load Historical Data
                       </button>
                     )}
                   </div>
