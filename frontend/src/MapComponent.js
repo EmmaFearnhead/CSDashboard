@@ -205,7 +205,7 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
   useEffect(() => {
     if (!mapRef.current) return;
     
-    // Clear existing markers and layers
+    // Clear existing markers and lines before adding new ones
     mapRef.current.eachLayer(layer => {
       if (layer instanceof window.L.Marker || 
           layer instanceof window.L.Polyline || 
