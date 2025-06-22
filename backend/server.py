@@ -199,65 +199,6 @@ async def import_simplified_data():
 async def import_excel_file(file: UploadFile = File(...)):
     """Import translocation data from Excel or CSV file upload - ROBUST VERSION"""
     
-    def validate_coordinates(coord_string):
-        """Validate and format coordinates for Google Maps format"""
-        if not coord_string or pd.isna(coord_string) or str(coord_string).strip() == "":
-            return "0, 0"
-        
-        try:
-            # Clean the coordinate string
-            clean_coords = str(coord_string).replace("°", "").replace("'", "").replace('"', "").strip()
-            
-            # Handle Google Maps format: "-27.808400634565363, 32.34692072433984"
-            if "," in clean_coords:
-                parts = clean_coords.split(",")
-                if len(parts) >= 2:
-                    lat = float(parts[0].strip())
-                    lng = float(parts[1].strip())
-                    
-                    # Validate coordinates are reasonable for Africa
-                    # Africa latitude range: roughly -35 to 37
-                    # Africa longitude range: roughly -20 to 52
-                    if (-40 <= lat <= 40) and (-25 <= lng <= 55):
-                        return f"{lat}, {lng}"
-                    else:
-                        print(f"Warning: Coordinates outside Africa range: {clean_coords}")
-                        return "0, 0"
-            
-            return "0, 0"
-        except Exception as e:
-            print(f"Error validating coordinates '{coord_string}': {e}")
-            return "0, 0"
-    
-    def categorize_species(original_species, additional_info=""):
-        """Categorize species with proper validation"""
-        if pd.isna(original_species) or not original_species:
-            return "Other"
-                
-        species_str = str(original_species).strip()
-        additional_str = str(additional_info) if not pd.isna(additional_info) else ""
-        
-        # Direct mapping for primary species
-        if "elephant" in species_str.lower():
-            return "Elephant"
-        elif "black rhino" in species_str.lower():
-            return "Black Rhino"
-        elif "white rhino" in species_str.lower():
-            return "White Rhino"
-        elif "plains game" in species_str.lower():
-            return "Plains Game Species"
-        else:
-            # Check if this is a multi-species entry based on additional info
-            multi_species_keywords = ["buffalo", "impala", "sable", "kudu", "warthog", "waterbuck", "eland", "zebra", "hartebeest", "reedbuck", "oryx"]
-            species_count = sum(1 for keyword in multi_species_keywords if keyword.lower() in additional_str.lower())
-            
-            # If additional_info mentions multiple species or has separators, it's Plains Game
-            if species_count >= 2 or ";" in additional_str or ("," in additional_str and any(keyword in additional_str.lower() for keyword in multi_species_keywords)):
-                return "Plains Game Species"
-            else:
-                # Return "Other" for single species that aren't the main categories
-                return "Other"
-    
     try:
         # Clear existing data first
         delete_result = await db.translocations.delete_many({})
@@ -268,10 +209,8 @@ async def import_excel_file(file: UploadFile = File(...)):
         
         # Determine file type and read accordingly
         if file.filename.endswith('.xlsx') or file.filename.endswith('.xls'):
-            # Read Excel file
             df = pd.read_excel(io.BytesIO(content))
         elif file.filename.endswith('.csv'):
-            # Read CSV file
             df = pd.read_csv(io.BytesIO(content))
         else:
             raise HTTPException(status_code=400, detail="File must be Excel (.xlsx, .xls) or CSV (.csv)")
@@ -279,162 +218,136 @@ async def import_excel_file(file: UploadFile = File(...)):
         print(f"File read successfully. Shape: {df.shape}")
         print(f"Columns: {list(df.columns)}")
         
-        # Column mapping - handle different possible column names
-        column_mapping = {
-            'project_title': ['Project Title', 'project_title', 'Project', 'Title'],
-            'year': ['Year', 'year'],
-            'species': ['Species', 'species'],
-            'number_of_animals': ['Number', 'number', 'Number of Animals', 'Animals', 'Count'],
-            'source_name': ['Source Area: Name', 'Source Name', 'Source Area Name', 'source_name'],
-            'source_coordinates': ['Source Area: Co-Ordinates', 'Source Coordinates', 'Source Area Coordinates', 'source_coordinates'],
-            'source_country': ['Source Area: Country', 'Source Country', 'Source Area Country', 'source_country'],
-            'recipient_name': ['Recipient Area: Name', 'Recipient Name', 'Recipient Area Name', 'recipient_name'],
-            'recipient_coordinates': ['Recipient Area: Co-Ordinates', 'Recipient Coordinates', 'Recipient Area Coordinates', 'recipient_coordinates'],
-            'recipient_country': ['Recipient Area: Country', 'Recipient Country', 'Recipient Area Country', 'recipient_country'],
-            'transport': ['Transport', 'transport'],
-            'special_project': ['Special Project', 'special_project', 'Special'],
-            'additional_info': ['Additional Info', 'additional_info', 'Notes', 'Additional Information']
-        }
+        # Flexible column mapping - find ANY column that might contain the data
+        def find_column(df, patterns):
+            for pattern in patterns:
+                for col in df.columns:
+                    if pattern.lower() in str(col).lower():
+                        return col
+            return None
         
-        # Find the correct column names
-        found_columns = {}
-        for field, possible_names in column_mapping.items():
-            for col_name in possible_names:
-                if col_name in df.columns:
-                    found_columns[field] = col_name
-                    break
-            if field not in found_columns:
-                # If critical columns are missing, raise error
-                if field in ['project_title', 'year', 'species', 'number_of_animals']:
-                    print(f"CRITICAL: Missing required column '{field}'. Available columns: {list(df.columns)}")
-                    raise HTTPException(status_code=400, detail=f"Required column not found: {field}. Available columns: {list(df.columns)}")
-                else:
-                    print(f"WARNING: Optional column '{field}' not found. Available columns: {list(df.columns)}")
+        # Find columns with very flexible matching
+        project_col = find_column(df, ['project', 'title', 'name'])
+        year_col = find_column(df, ['year', 'date'])
+        species_col = find_column(df, ['species', 'animal'])
+        number_col = find_column(df, ['number', 'count', 'animals'])
+        source_name_col = find_column(df, ['source', 'origin'])
+        source_coord_col = find_column(df, ['source', 'coord', 'coordinates'])
+        source_country_col = find_column(df, ['source', 'country'])
+        dest_name_col = find_column(df, ['recipient', 'destination', 'dest'])
+        dest_coord_col = find_column(df, ['recipient', 'destination', 'dest', 'coord'])
+        dest_country_col = find_column(df, ['recipient', 'destination', 'dest', 'country'])
+        transport_col = find_column(df, ['transport', 'method'])
+        project_col_alt = find_column(df, ['special', 'project'])
+        info_col = find_column(df, ['info', 'additional', 'notes'])
         
-        print(f"Column mapping: {found_columns}")
+        print(f"Found columns:")
+        print(f"  Project: {project_col}")
+        print(f"  Year: {year_col}")
+        print(f"  Species: {species_col}")
+        print(f"  Number: {number_col}")
+        print(f"  Source name: {source_name_col}")
+        print(f"  Source coords: {source_coord_col}")
         
-        # Validate that we have the minimum required columns
-        required_fields = ['project_title', 'year', 'species', 'number_of_animals']
-        missing_fields = [field for field in required_fields if field not in found_columns]
-        if missing_fields:
-            error_msg = f"Missing required columns: {missing_fields}. Available columns: {list(df.columns)}"
-            print(f"CRITICAL ERROR: {error_msg}")
-            raise HTTPException(status_code=400, detail=error_msg)
-        
-        # Process each row
+        # Process each row - VERY PERMISSIVE
         created_translocations = []
         errors = []
         
-        print(f"Starting to process {len(df)} rows...")
-        
         for index, row in df.iterrows():
             try:
-                print(f"\n=== Processing row {index+1} ===")
-                print(f"Raw row data: {dict(row)}")
+                # Skip completely empty rows
+                if row.isna().all():
+                    print(f"Skipping empty row {index+1}")
+                    continue
                 
-                # Extract data with proper error handling
-                project_title = str(row[found_columns['project_title']]) if not pd.isna(row[found_columns['project_title']]) else f"Project {index+1}"
-                print(f"Project title: {project_title}")
+                # Extract with maximum flexibility
+                project_title = str(row[project_col]) if project_col and not pd.isna(row[project_col]) else f"Project {index+1}"
                 
-                # Handle year conversion
-                year_val = row[found_columns['year']]
-                if pd.isna(year_val):
-                    year = 2024
-                else:
-                    year_str = str(year_val)
-                    # Handle complex year formats like "2023 & 2023", "2022-2023", etc.
-                    if '&' in year_str:
-                        # Take the first year from "2023 & 2023"
-                        year = int(year_str.split('&')[0].strip())
-                    elif '-' in year_str and len(year_str.split('-')) == 2:
-                        # Take the first year from "2022-2023"
-                        year = int(year_str.split('-')[0].strip())
-                    elif '/' in year_str:
-                        # Take the first year from "2022/2023"
-                        year = int(year_str.split('/')[0].strip())
-                    else:
-                        # Try normal conversion
-                        try:
-                            year = int(float(year_str))
-                        except:
-                            year = 2024  # Default fallback
-                print(f"Year: {year}")
+                # Year - handle ANY format
+                year = 2024  # default
+                if year_col and not pd.isna(row[year_col]):
+                    year_str = str(row[year_col]).strip()
+                    # Extract first 4-digit number from any string
+                    import re
+                    year_match = re.search(r'(20\d{2}|19\d{2})', year_str)
+                    if year_match:
+                        year = int(year_match.group(1))
                 
-                # Handle number of animals
-                number_val = row[found_columns['number_of_animals']]
-                if pd.isna(number_val):
-                    number_of_animals = 1
-                else:
+                # Species - be very flexible
+                species = "Other"  # default
+                if species_col and not pd.isna(row[species_col]):
+                    species_str = str(row[species_col]).lower()
+                    if "elephant" in species_str:
+                        species = "Elephant"
+                    elif "black rhino" in species_str or "black-rhino" in species_str:
+                        species = "Black Rhino"
+                    elif "white rhino" in species_str or "white-rhino" in species_str:
+                        species = "White Rhino"
+                    elif "plains" in species_str or "multiple" in species_str or "game" in species_str:
+                        species = "Plains Game Species"
+                
+                # Number - extract any number
+                number_of_animals = 1  # default
+                if number_col and not pd.isna(row[number_col]):
                     try:
-                        number_of_animals = int(float(str(number_val)))
+                        # Extract first number from string
+                        import re
+                        num_str = str(row[number_col])
+                        num_match = re.search(r'(\d+)', num_str)
+                        if num_match:
+                            number_of_animals = int(num_match.group(1))
                     except:
                         number_of_animals = 1
-                print(f"Number of animals: {number_of_animals}")
-                
-                # Get additional info first for species categorization
-                additional_info_val = row[found_columns.get('additional_info', '')]
-                additional_info = str(additional_info_val) if not pd.isna(additional_info_val) else ""
-                if additional_info == 'nan':
-                    additional_info = ""
-                print(f"Additional info: {additional_info}")
-                
-                # Categorize species
-                original_species = row[found_columns['species']] if not pd.isna(row[found_columns['species']]) else ""
-                species = categorize_species(original_species, additional_info)
-                print(f"Original species: {original_species} -> Categorized: {species}")
-                
-                # Validate species is one of our enum values
-                valid_species = ["Elephant", "Black Rhino", "White Rhino", "Plains Game Species", "Other"]
-                if species not in valid_species:
-                    print(f"WARNING: Invalid species '{species}', defaulting to 'Other'")
-                    species = "Other"
                 
                 # Source area
-                source_name_val = row[found_columns.get('source_name', '')]
-                source_name = str(source_name_val) if not pd.isna(source_name_val) else "Unknown Source"
-                print(f"Source name: {source_name}")
+                source_name = str(row[source_name_col]) if source_name_col and not pd.isna(row[source_name_col]) else "Unknown Source"
+                source_coords = "0, 0"
+                if source_coord_col and not pd.isna(row[source_coord_col]):
+                    coord_str = str(row[source_coord_col])
+                    # Extract coordinates from any format
+                    import re
+                    coord_match = re.findall(r'-?\d+\.?\d*', coord_str)
+                    if len(coord_match) >= 2:
+                        source_coords = f"{coord_match[0]}, {coord_match[1]}"
                 
-                source_coordinates = validate_coordinates(row[found_columns.get('source_coordinates', '')])
-                print(f"Source coordinates: {source_coordinates}")
+                source_country = str(row[source_country_col]) if source_country_col and not pd.isna(row[source_country_col]) else "Unknown"
                 
-                source_country_val = row[found_columns.get('source_country', '')]
-                source_country = str(source_country_val) if not pd.isna(source_country_val) else "Unknown"
-                print(f"Source country: {source_country}")
+                # Destination area
+                dest_name = str(row[dest_name_col]) if dest_name_col and not pd.isna(row[dest_name_col]) else "Unknown Destination"
+                dest_coords = "0, 0"
+                if dest_coord_col and not pd.isna(row[dest_coord_col]):
+                    coord_str = str(row[dest_coord_col])
+                    import re
+                    coord_match = re.findall(r'-?\d+\.?\d*', coord_str)
+                    if len(coord_match) >= 2:
+                        dest_coords = f"{coord_match[0]}, {coord_match[1]}"
                 
-                # Recipient area
-                recipient_name_val = row[found_columns.get('recipient_name', '')]
-                recipient_name = str(recipient_name_val) if not pd.isna(recipient_name_val) else "Unknown Recipient"
-                print(f"Recipient name: {recipient_name}")
+                dest_country = str(row[dest_country_col]) if dest_country_col and not pd.isna(row[dest_country_col]) else "Unknown"
                 
-                recipient_coordinates = validate_coordinates(row[found_columns.get('recipient_coordinates', '')])
-                print(f"Recipient coordinates: {recipient_coordinates}")
+                # Transport
+                transport = "Road"
+                if transport_col and not pd.isna(row[transport_col]):
+                    transport_str = str(row[transport_col]).lower()
+                    if "air" in transport_str or "plane" in transport_str or "fly" in transport_str:
+                        transport = "Air"
                 
-                recipient_country_val = row[found_columns.get('recipient_country', '')]
-                recipient_country = str(recipient_country_val) if not pd.isna(recipient_country_val) else "Unknown"
-                print(f"Recipient country: {recipient_country}")
+                # Special project
+                special_project = ""
+                if project_col_alt and not pd.isna(row[project_col_alt]):
+                    proj_str = str(row[project_col_alt])
+                    if "african parks" in proj_str.lower():
+                        special_project = "African Parks"
+                    elif "peace parks" in proj_str.lower():
+                        special_project = "Peace Parks"
+                    elif "rhino rewild" in proj_str.lower():
+                        special_project = "Rhino Rewild"
                 
-                # Transport and special project
-                transport_val = row[found_columns.get('transport', '')]
-                transport = str(transport_val) if not pd.isna(transport_val) else "Road"
-                if transport.lower() not in ['road', 'air']:
-                    print(f"WARNING: Invalid transport '{transport}', defaulting to 'Road'")
-                    transport = "Road"
-                else:
-                    transport = transport.capitalize()
-                print(f"Transport: {transport}")
+                # Additional info
+                additional_info = str(row[info_col]) if info_col and not pd.isna(row[info_col]) else ""
+                if additional_info.lower() in ['nan', 'none']:
+                    additional_info = ""
                 
-                special_project_val = row[found_columns.get('special_project', '')]
-                special_project = str(special_project_val) if not pd.isna(special_project_val) else ""
-                if special_project.lower() in ['nan', 'none', '']:
-                    special_project = ""
-                
-                # Ensure special_project is a valid enum value
-                valid_special_projects = ["Peace Parks", "African Parks", "Rhino Rewild", ""]
-                if special_project not in valid_special_projects:
-                    special_project = ""
-                print(f"Special project: {special_project}")
-                
-                # Create translocation record
+                # Create record
                 translocation_data = {
                     "project_title": project_title,
                     "year": year,
@@ -442,35 +355,30 @@ async def import_excel_file(file: UploadFile = File(...)):
                     "number_of_animals": number_of_animals,
                     "source_area": {
                         "name": source_name,
-                        "coordinates": source_coordinates,
+                        "coordinates": source_coords,
                         "country": source_country
                     },
                     "recipient_area": {
-                        "name": recipient_name,
-                        "coordinates": recipient_coordinates,
-                        "country": recipient_country
+                        "name": dest_name,
+                        "coordinates": dest_coords,
+                        "country": dest_country
                     },
                     "transport": transport,
                     "special_project": special_project,
                     "additional_info": additional_info
                 }
                 
-                print(f"About to create Translocation object with data: {translocation_data}")
+                print(f"Row {index+1}: {project_title} - {species} ({number_of_animals})")
                 
                 translocation_obj = Translocation(**translocation_data)
-                print(f"Created Translocation object successfully")
-                
                 result = await db.translocations.insert_one(translocation_obj.dict())
-                print(f"Inserted into database with ID: {result.inserted_id}")
-                
                 created_translocations.append(translocation_obj)
-                print(f"Row {index+1} processed successfully!")
                 
             except Exception as row_error:
-                error_msg = f"Error processing row {index+1}: {str(row_error)}"
+                error_msg = f"Row {index+1}: {str(row_error)}"
                 print(f"ERROR: {error_msg}")
                 errors.append(error_msg)
-                continue  # Skip problematic rows but continue processing
+                continue  # Always continue processing
         
         success_message = f"Successfully imported {len(created_translocations)} translocations from {file.filename}"
         if errors:
@@ -480,7 +388,7 @@ async def import_excel_file(file: UploadFile = File(...)):
             "message": success_message,
             "total_rows_processed": len(df),
             "successful_imports": len(created_translocations),
-            "errors": errors[:5],  # Return first 5 errors for debugging
+            "errors": errors[:10],  # Show first 10 errors
             "species_summary": {
                 species: len([t for t in created_translocations if t.species == species])
                 for species in set([t.species for t in created_translocations])
@@ -488,10 +396,7 @@ async def import_excel_file(file: UploadFile = File(...)):
         }
         
     except Exception as e:
-        import traceback
-        error_details = traceback.format_exc()
-        print(f"Error processing file: {str(e)}")
-        print(f"Detailed error: {error_details}")
+        print(f"Critical error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
 # 5. Setup FastAPI App
