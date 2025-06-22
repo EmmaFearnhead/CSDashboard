@@ -502,17 +502,9 @@ const TranslocationForm = ({ onSubmit, editingTranslocation, onCancel }) => {
             required
           >
             <option value="Elephant">Elephant</option>
-            <option value="Black Rhino">Black Rhino</option>
             <option value="White Rhino">White Rhino</option>
-            <option value="Lion">Lion</option>
-            <option value="Buffalo">Buffalo</option>
-            <option value="Impala">Impala</option>
-            <option value="Sable">Sable</option>
-            <option value="Kudu">Kudu</option>
-            <option value="Warthog">Warthog</option>
-            <option value="Waterbuck">Waterbuck</option>
-            <option value="Eland">Eland</option>
-            <option value="Zebra">Zebra</option>
+            <option value="Black Rhino">Black Rhino</option>
+            <option value="Plains Game Species">Plains Game Species</option>
             <option value="Other">Other</option>
           </select>
         </div>
