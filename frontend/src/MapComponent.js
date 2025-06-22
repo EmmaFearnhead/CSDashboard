@@ -310,7 +310,7 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
       
       destMarker.bindTooltip(`Destination: ${translocation.recipient_area.name}`);
 
-      // Connection line with proper styling
+      // Connection line with proper styling and detailed popup
       const polyline = window.L.polyline([[sourceLat, sourceLng], [destLat, destLng]], {
         color: speciesColor,
         weight: 4,
@@ -318,6 +318,54 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
         dashArray: translocation.transport === 'Air' ? '10, 5' : null
       }).addTo(mapRef.current);
 
+      // Enhanced line popup with complete translocation details
+      const linePopupContent = `
+        <div style="padding: 15px; min-width: 280px; max-width: 350px;">
+          <h3 style="font-weight: bold; font-size: 18px; margin-bottom: 12px; color: ${speciesColor}; border-bottom: 2px solid ${speciesColor}; padding-bottom: 5px;">
+            ${translocation.project_title}
+          </h3>
+          
+          <div style="margin-bottom: 12px;">
+            <p style="margin: 4px 0;"><strong>Species:</strong> ${translocation.species}</p>
+            <p style="margin: 4px 0;"><strong>Number of Animals:</strong> ${translocation.number_of_animals}</p>
+            <p style="margin: 4px 0;"><strong>Year:</strong> ${translocation.year}</p>
+            <p style="margin: 4px 0;"><strong>Transport:</strong> ${getTransportIcon(translocation.transport)} ${translocation.transport}</p>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <h4 style="font-weight: bold; color: #2F5F3F; margin: 8px 0 4px 0;">Source Location:</h4>
+            <p style="margin: 2px 0; color: #444;">📍 ${translocation.source_area.name}</p>
+            <p style="margin: 2px 0; color: #666; font-size: 12px;">🌍 ${translocation.source_area.country}</p>
+            <p style="margin: 2px 0; color: #666; font-size: 11px;">📌 ${translocation.source_area.coordinates}</p>
+          </div>
+
+          <div style="margin-bottom: 12px;">
+            <h4 style="font-weight: bold; color: #2F5F3F; margin: 8px 0 4px 0;">Destination Location:</h4>
+            <p style="margin: 2px 0; color: #444;">📍 ${translocation.recipient_area.name}</p>
+            <p style="margin: 2px 0; color: #666; font-size: 12px;">🌍 ${translocation.recipient_area.country}</p>
+            <p style="margin: 2px 0; color: #666; font-size: 11px;">📌 ${translocation.recipient_area.coordinates}</p>
+          </div>
+
+          ${translocation.special_project ? `
+          <div style="margin-bottom: 8px;">
+            <p style="margin: 4px 0;"><strong>Special Project:</strong> <span style="color: ${speciesColor};">${translocation.special_project}</span></p>
+          </div>
+          ` : ''}
+
+          ${translocation.additional_info ? `
+          <div style="margin-bottom: 8px; border-top: 1px solid #eee; padding-top: 8px;">
+            <h4 style="font-weight: bold; color: #2F5F3F; margin: 4px 0;">Additional Information:</h4>
+            <p style="margin: 4px 0; color: #555; font-style: italic;">${translocation.additional_info}</p>
+          </div>
+          ` : ''}
+
+          <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid #eee; font-size: 11px; color: #888;">
+            <p>Click markers for location-specific details</p>
+          </div>
+        </div>
+      `;
+
+      polyline.bindPopup(linePopupContent);
       polyline.bindTooltip(`${translocation.project_title}: ${translocation.number_of_animals} ${translocation.species}`);
 
       // Popups
