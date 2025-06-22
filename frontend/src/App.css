@@ -1,38 +1,145 @@
 .App {
-    text-align: center;
+  text-align: center;
 }
 
 .App-logo {
-    height: 40vmin;
-    pointer-events: none;
+  height: 40vmin;
+  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
 }
 
 .App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+  background-color: #282c34;
+  padding: 20px;
+  color: white;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
 }
 
 .App-link {
-    color: #61dafb;
+  color: #61dafb;
 }
 
 @keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Custom styles for the conservation dashboard */
+.container {
+  max-width: 1400px;
+}
+
+/* Map container styling */
+#map {
+  width: 100%;
+  height: 24rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Form styling improvements */
+.form-section {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Species color indicators */
+.species-elephant { color: #FF6B6B; }
+.species-rhino { color: #4ECDC4; }
+.species-lion { color: #45B7D1; }
+.species-cheetah { color: #96CEB4; }
+.species-buffalo { color: #FECA57; }
+.species-giraffe { color: #FF9FF3; }
+.species-zebra { color: #A55A3C; }
+.species-other { color: #95A5A6; }
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  #map {
+    height: 20rem;
+  }
+  
+  .grid-cols-1.md\\:grid-cols-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Loading animation */
+.loading-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Enhanced button styles */
+.btn-conservation {
+  background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  transition: all 0.3s ease;
+}
+
+.btn-conservation:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+}
+
+/* Stats panel enhancements */
+.stats-item {
+  transition: transform 0.2s ease;
+}
+
+.stats-item:hover {
+  transform: scale(1.02);
+}
+
+/* Info window custom styling */
+.gm-style .gm-style-iw-c {
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.gm-style .gm-style-iw-d {
+  overflow: hidden !important;
+}
+
+/* Custom scrollbar for form */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
