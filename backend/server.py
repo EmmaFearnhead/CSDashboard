@@ -357,10 +357,12 @@ async def import_excel_file(file: UploadFile = File(...)):
                     elif "rhino rewild" in proj_str.lower():
                         special_project = "Rhino Rewild"
                 
-                # Additional info
-                additional_info = str(row[info_col]) if info_col and not pd.isna(row[info_col]) else ""
-                if additional_info.lower() in ['nan', 'none']:
+                # Additional info - preserve exactly as written in spreadsheet
+                additional_info_val = row[info_col] if info_col and not pd.isna(row[info_col]) else None
+                additional_info = str(additional_info_val).strip() if additional_info_val is not None else ""
+                if additional_info.lower() in ['nan', 'none', 'null', '']:
                     additional_info = ""
+                # Keep additional info exactly as written in spreadsheet
                 
                 # Create record
                 translocation_data = {
