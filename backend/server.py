@@ -204,9 +204,22 @@ async def import_excel_file(file: UploadFile = File(...)):
     """Import translocation data from Excel or CSV file upload - ROBUST VERSION"""
     
     try:
-        # Clear existing data first
+        # FORCE clear all existing data - ensure no old data remains
         delete_result = await db.translocations.delete_many({})
-        print(f"Cleared {delete_result.deleted_count} existing records")
+        print(f"🗑️ CLEARED {delete_result.deleted_count} existing records - starting fresh")
+        
+        # Wait a moment to ensure delete completes
+        import asyncio
+        await asyncio.sleep(0.1)
+        
+        # Verify database is empty
+        remaining_count = await db.translocations.count_documents({})
+        print(f"📊 Database count after clear: {remaining_count}")
+        
+        if remaining_count > 0:
+            print("⚠️ WARNING: Database not fully cleared, forcing another clear")
+            await db.translocations.drop()
+            print("🗑️ Database collection dropped and recreated")
         
         # Read file content
         content = await file.read()
