@@ -86,22 +86,25 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
 
       const loadTileLayer = (index = 0) => {
         if (index >= tileLayerOptions.length) {
-          console.warn('All tile providers failed, using basic background');
+          console.warn('All tile providers failed, using enhanced geographic background');
           const canvas = document.createElement('canvas');
           canvas.width = 256;
           canvas.height = 256;
           const ctx = canvas.getContext('2d');
           
+          // Create a detailed geographic background
           const gradient = ctx.createLinearGradient(0, 0, 0, 256);
-          gradient.addColorStop(0, '#87CEEB');
-          gradient.addColorStop(0.7, '#F0E68C');
-          gradient.addColorStop(1, '#8FBC8F');
+          gradient.addColorStop(0, '#E6F3FF'); // Light blue (ocean)
+          gradient.addColorStop(0.3, '#B8E6B8'); // Light green (coast)
+          gradient.addColorStop(0.7, '#90EE90'); // Green (land)
+          gradient.addColorStop(1, '#228B22'); // Dark green (mountains)
           
           ctx.fillStyle = gradient;
           ctx.fillRect(0, 0, 256, 256);
           
+          // Add coordinate grid lines
           ctx.strokeStyle = '#DDD';
-          ctx.lineWidth = 1;
+          ctx.lineWidth = 0.5;
           for (let i = 0; i <= 256; i += 32) {
             ctx.beginPath();
             ctx.moveTo(i, 0);
@@ -111,9 +114,15 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
             ctx.stroke();
           }
           
+          // Add "AFRICA" text for context
+          ctx.font = '16px Arial';
+          ctx.fillStyle = '#2F4F2F';
+          ctx.textAlign = 'center';
+          ctx.fillText('AFRICA', 128, 128);
+          
           const dataUrl = canvas.toDataURL();
           window.L.tileLayer(dataUrl, {
-            attribution: 'Basic Geographic Background',
+            attribution: 'Basic Geographic Background - Africa Region',
             maxZoom: 19,
             tileSize: 256
           }).addTo(mapRef.current);
