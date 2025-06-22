@@ -168,20 +168,32 @@ async def import_excel_file(file: UploadFile = File(...)):
                         return col
             return None
         
-        # Find columns with very flexible matching - MORE AGGRESSIVE
+        # Find columns with EXACT matching for coordinates
         project_col = find_column(df, ['project', 'title'])
         year_col = find_column(df, ['year', 'date'])
         species_col = find_column(df, ['species', 'animal'])
         number_col = find_column(df, ['number', 'count', 'animals'])
-        source_name_col = find_column(df, ['source', 'origin'])
-        source_coord_col = find_column(df, ['source', 'coord', 'co-ordinates'])
-        source_country_col = find_column(df, ['source', 'country'])
-        dest_name_col = find_column(df, ['recipient', 'destination'])
-        dest_coord_col = find_column(df, ['recipient', 'destination', 'coord', 'co-ordinates'])
-        dest_country_col = find_column(df, ['recipient', 'destination', 'country'])
+        source_name_col = find_column(df, ['source area: name', 'source name'])
+        source_coord_col = find_column(df, ['co-ordinates', 'coordinates']) # Find coordinates first
+        source_country_col = find_column(df, ['source area: country', 'source country'])
+        dest_name_col = find_column(df, ['recipient area: name', 'recipient name'])
+        dest_coord_col = find_column(df, ['recipient area: co-ordinates', 'recipient coordinates'])
+        dest_country_col = find_column(df, ['recipient area: country', 'recipient country'])
         transport_col = find_column(df, ['transport', 'method'])
         project_col_alt = find_column(df, ['special', 'project'])
         info_col = find_column(df, ['additional', 'info', 'notes'])
+        
+        # Fix coordinate columns specifically
+        if not source_coord_col:
+            for col in df.columns:
+                if 'source' in col.lower() and 'co-ordinates' in col.lower():
+                    source_coord_col = col
+                    break
+        if not dest_coord_col:
+            for col in df.columns:
+                if 'recipient' in col.lower() and 'co-ordinates' in col.lower():
+                    dest_coord_col = col
+                    break
         
         print(f"Found columns:")
         print(f"  Project: {project_col}")
