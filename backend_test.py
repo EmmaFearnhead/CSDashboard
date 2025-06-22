@@ -3,6 +3,7 @@ import requests
 import json
 import sys
 from datetime import datetime
+import uuid
 
 # Get the backend URL from the frontend .env file
 BACKEND_URL = "https://999caf0b-2699-456b-bed8-df8245ee1a85.preview.emergentagent.com"
@@ -30,54 +31,6 @@ def test_health_check():
         print(f"❌ Health check test failed: {str(e)}")
         return False
 
-def test_create_sample_data():
-    """Test the sample data creation endpoint"""
-    print("Testing sample data creation endpoint (POST /api/translocations/sample-data)...")
-    
-    try:
-        response = requests.post(f"{API_URL}/translocations/sample-data")
-        print(f"Status Code: {response.status_code}")
-        print(f"Response message: {response.json().get('message', 'No message')}")
-        print(f"Number of translocations created: {len(response.json().get('translocations', []))}")
-        
-        assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
-        assert "message" in response.json(), "Response should contain 'message' field"
-        assert "translocations" in response.json(), "Response should contain 'translocations' field"
-        
-        translocations = response.json()["translocations"]
-        assert len(translocations) > 0, "No sample translocations were created"
-        
-        # Verify the structure of the first translocation
-        first_translocation = translocations[0]
-        required_fields = ["id", "species", "number_of_animals", "month", "year", 
-                          "source_reserve", "recipient_reserve", "transport_mode", 
-                          "additional_notes", "created_at"]
-        
-        for field in required_fields:
-            assert field in first_translocation, f"Translocation missing required field: {field}"
-        
-        # Verify location data structure
-        for location_type in ["source_reserve", "recipient_reserve"]:
-            location = first_translocation[location_type]
-            assert "name" in location, f"{location_type} missing 'name' field"
-            assert "country" in location, f"{location_type} missing 'country' field"
-            assert "latitude" in location, f"{location_type} missing 'latitude' field"
-            assert "longitude" in location, f"{location_type} missing 'longitude' field"
-        
-        # Verify African coordinates (rough check)
-        for location_type in ["source_reserve", "recipient_reserve"]:
-            location = first_translocation[location_type]
-            lat = location["latitude"]
-            lng = location["longitude"]
-            assert -35 <= lat <= 35, f"Latitude {lat} is not within African range"
-            assert -20 <= lng <= 50, f"Longitude {lng} is not within African range"
-        
-        print("✅ Sample data creation test passed!")
-        return True
-    except Exception as e:
-        print(f"❌ Sample data creation test failed: {str(e)}")
-        return False
-
 def test_get_translocations():
     """Test fetching all translocations"""
     print("Testing get all translocations endpoint (GET /api/translocations)...")
@@ -85,25 +38,87 @@ def test_get_translocations():
     try:
         response = requests.get(f"{API_URL}/translocations")
         print(f"Status Code: {response.status_code}")
-        print(f"Number of translocations retrieved: {len(response.json())}")
         
         assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
         translocations = response.json()
+        print(f"Number of translocations retrieved: {len(translocations)}")
         
         # If we have translocations, verify the structure of the first one
         if translocations:
             first_translocation = translocations[0]
-            required_fields = ["id", "species", "number_of_animals", "month", "year", 
-                              "source_reserve", "recipient_reserve", "transport_mode", 
-                              "additional_notes", "created_at"]
+            required_fields = ["id", "project_title", "species", "number_of_animals", "year", 
+                              "source_area", "recipient_area", "transport", 
+                              "special_project", "additional_info", "created_at"]
             
             for field in required_fields:
                 assert field in first_translocation, f"Translocation missing required field: {field}"
+            
+            # Verify location data structure
+            for location_type in ["source_area", "recipient_area"]:
+                location = first_translocation[location_type]
+                assert "name" in location, f"{location_type} missing 'name' field"
+                assert "country" in location, f"{location_type} missing 'country' field"
+                assert "coordinates" in location, f"{location_type} missing 'coordinates' field"
+            
+            # Verify African coordinates (rough check)
+            for location_type in ["source_area", "recipient_area"]:
+                location = first_translocation[location_type]
+                coords = location["coordinates"].split(",")
+                if len(coords) == 2:
+                    lat = float(coords[0].strip())
+                    lng = float(coords[1].strip())
+                    assert -35 <= lat <= 35, f"Latitude {lat} is not within African range"
+                    assert -20 <= lng <= 50, f"Longitude {lng} is not within African range"
         
         print("✅ Get all translocations test passed!")
         return True
     except Exception as e:
         print(f"❌ Get all translocations test failed: {str(e)}")
+        return False
+
+def test_import_complete_excel_data():
+    """Test importing complete historical data from Excel"""
+    print("Testing import complete Excel data endpoint (POST /api/translocations/import-complete-excel-data)...")
+    
+    try:
+        response = requests.post(f"{API_URL}/translocations/import-complete-excel-data")
+        print(f"Status Code: {response.status_code}")
+        
+        assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
+        result = response.json()
+        
+        assert "message" in result, "Response should contain 'message' field"
+        assert "translocations" in result, "Response should contain 'translocations' field"
+        
+        translocations = result["translocations"]
+        print(f"Number of imported translocations: {len(translocations)}")
+        assert len(translocations) >= 49, f"Expected at least 49 translocations, got {len(translocations)}"
+        
+        # Verify years span from 2016 to 2025
+        years = set(t["year"] for t in translocations)
+        print(f"Years in dataset: {sorted(years)}")
+        assert min(years) <= 2016, f"Expected earliest year to be 2016 or earlier, got {min(years)}"
+        assert max(years) >= 2025, f"Expected latest year to be 2025 or later, got {max(years)}"
+        
+        # Verify species diversity
+        species = set(t["species"] for t in translocations)
+        print(f"Species in dataset: {sorted(species)}")
+        assert len(species) >= 5, f"Expected at least 5 different species, got {len(species)}"
+        
+        # Verify key locations
+        locations = set()
+        for t in translocations:
+            locations.add(t["source_area"]["name"])
+            locations.add(t["recipient_area"]["name"])
+        
+        key_locations = ["Liwonde National Park", "Akagera National Park", "Zinave National Park"]
+        for location in key_locations:
+            assert location in locations, f"Expected to find {location} in dataset"
+        
+        print("✅ Import complete Excel data test passed!")
+        return True
+    except Exception as e:
+        print(f"❌ Import complete Excel data test failed: {str(e)}")
         return False
 
 def test_get_translocation_stats():
@@ -113,23 +128,29 @@ def test_get_translocation_stats():
     try:
         response = requests.get(f"{API_URL}/translocations/stats")
         print(f"Status Code: {response.status_code}")
-        print(f"Statistics: {json.dumps(response.json(), indent=2)}")
         
         assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
         stats = response.json()
+        print(f"Statistics: {json.dumps(stats, indent=2)}")
         
-        # If we have stats, verify the structure
-        if stats:
-            # Get a sample species
-            sample_species = list(stats.keys())[0]
-            species_stats = stats[sample_species]
-            
-            assert "total_animals" in species_stats, "Statistics missing 'total_animals' field"
-            assert "total_translocations" in species_stats, "Statistics missing 'total_translocations' field"
-            
-            # Verify that total_animals and total_translocations are integers
-            assert isinstance(species_stats["total_animals"], int), "total_animals should be an integer"
-            assert isinstance(species_stats["total_translocations"], int), "total_translocations should be an integer"
+        # Verify Buffalo has the largest count
+        assert "Buffalo" in stats, "Buffalo should be in the statistics"
+        buffalo_count = stats["Buffalo"]["total_animals"]
+        
+        # Verify Elephant has the second largest count
+        assert "Elephant" in stats, "Elephant should be in the statistics"
+        elephant_count = stats["Elephant"]["total_animals"]
+        
+        # Check if Buffalo has more animals than Elephant
+        print(f"Buffalo count: {buffalo_count}, Elephant count: {elephant_count}")
+        assert buffalo_count > elephant_count, f"Expected Buffalo count ({buffalo_count}) to be greater than Elephant count ({elephant_count})"
+        
+        # Verify that total_animals and total_translocations are integers for all species
+        for species, species_stats in stats.items():
+            assert "total_animals" in species_stats, f"Statistics for {species} missing 'total_animals' field"
+            assert "total_translocations" in species_stats, f"Statistics for {species} missing 'total_translocations' field"
+            assert isinstance(species_stats["total_animals"], int), f"total_animals for {species} should be an integer"
+            assert isinstance(species_stats["total_translocations"], int), f"total_translocations for {species} should be an integer"
         
         print("✅ Translocation statistics test passed!")
         return True
@@ -143,52 +164,69 @@ def test_filtered_translocations():
     
     try:
         # Test filtering by species
-        species_filter = "elephant"
+        species_filter = "Elephant"
         response = requests.get(f"{API_URL}/translocations?species={species_filter}")
         print(f"Status Code (species filter): {response.status_code}")
+        
+        assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
         species_translocations = response.json()
         print(f"Number of {species_filter} translocations: {len(species_translocations)}")
         
-        assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
         if species_translocations:
             for translocation in species_translocations:
                 assert translocation["species"] == species_filter, f"Expected species {species_filter}, got {translocation['species']}"
         
         # Test filtering by year
-        year_filter = 2024
+        year_filter = 2025
         response = requests.get(f"{API_URL}/translocations?year={year_filter}")
         print(f"Status Code (year filter): {response.status_code}")
+        
+        assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
         year_translocations = response.json()
         print(f"Number of translocations from {year_filter}: {len(year_translocations)}")
         
-        assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
         if year_translocations:
             for translocation in year_translocations:
                 assert translocation["year"] == year_filter, f"Expected year {year_filter}, got {translocation['year']}"
         
         # Test filtering by transport mode
-        transport_filter = "road"
-        response = requests.get(f"{API_URL}/translocations?transport_mode={transport_filter}")
+        transport_filter = "Road"
+        response = requests.get(f"{API_URL}/translocations?transport={transport_filter}")
         print(f"Status Code (transport mode filter): {response.status_code}")
+        
+        assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
         transport_translocations = response.json()
         print(f"Number of {transport_filter} translocations: {len(transport_translocations)}")
         
-        assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
         if transport_translocations:
             for translocation in transport_translocations:
-                assert translocation["transport_mode"] == transport_filter, f"Expected transport_mode {transport_filter}, got {translocation['transport_mode']}"
+                assert translocation["transport"] == transport_filter, f"Expected transport {transport_filter}, got {translocation['transport']}"
+        
+        # Test filtering by special project
+        project_filter = "Peace Parks"
+        response = requests.get(f"{API_URL}/translocations?special_project={project_filter}")
+        print(f"Status Code (special project filter): {response.status_code}")
+        
+        assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
+        project_translocations = response.json()
+        print(f"Number of {project_filter} translocations: {len(project_translocations)}")
+        
+        if project_translocations:
+            for translocation in project_translocations:
+                assert translocation["special_project"] == project_filter, f"Expected special_project {project_filter}, got {translocation['special_project']}"
         
         # Test combined filters
-        response = requests.get(f"{API_URL}/translocations?species={species_filter}&transport_mode={transport_filter}")
+        response = requests.get(f"{API_URL}/translocations?species={species_filter}&transport={transport_filter}")
         print(f"Status Code (combined filters): {response.status_code}")
+        
+        assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
         combined_translocations = response.json()
         print(f"Number of {species_filter} translocations by {transport_filter}: {len(combined_translocations)}")
         
-        assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
         if combined_translocations:
             for translocation in combined_translocations:
                 assert translocation["species"] == species_filter, f"Expected species {species_filter}, got {translocation['species']}"
-                assert translocation["transport_mode"] == transport_filter, f"Expected transport_mode {transport_filter}, got {translocation['transport_mode']}"
+                assert translocation["transport"] == transport_filter, f"Expected transport {transport_filter}, got {translocation['transport']}"
         
         print("✅ Filtered translocations test passed!")
         return True
@@ -196,89 +234,116 @@ def test_filtered_translocations():
         print(f"❌ Filtered translocations test failed: {str(e)}")
         return False
 
-def test_create_translocation():
-    """Test creating a new translocation"""
-    print("Testing create translocation endpoint (POST /api/translocations)...")
+def test_create_update_delete_translocation():
+    """Test CRUD operations for translocations"""
+    print("Testing CRUD operations for translocations...")
     
     try:
-        # Create a new translocation with realistic data
+        # 1. CREATE: Create a new translocation
         new_translocation = {
-            "species": "lion",
-            "number_of_animals": 12,
-            "month": 5,
+            "project_title": "Test Lion Translocation",
             "year": 2024,
-            "source_reserve": {
+            "species": "Lion",
+            "number_of_animals": 12,
+            "source_area": {
                 "name": "Serengeti National Park",
-                "country": "Tanzania",
-                "latitude": -2.3333,
-                "longitude": 34.8333
+                "coordinates": "-2.3333, 34.8333",
+                "country": "Tanzania"
             },
-            "recipient_reserve": {
+            "recipient_area": {
                 "name": "Ngorongoro Conservation Area",
-                "country": "Tanzania",
-                "latitude": -3.2000,
-                "longitude": 35.5000
+                "coordinates": "-3.2000, 35.5000",
+                "country": "Tanzania"
             },
-            "transport_mode": "road",
-            "additional_notes": "Lion pride relocation for territorial management"
+            "transport": "Road",
+            "special_project": "African Parks",
+            "additional_info": "Lion pride relocation for territorial management"
         }
         
+        print("Creating new translocation...")
         response = requests.post(
             f"{API_URL}/translocations",
             json=new_translocation
         )
         
         print(f"Status Code: {response.status_code}")
-        if response.status_code == 200:
-            print(f"Created translocation ID: {response.json().get('id', 'No ID')}")
-        else:
-            print(f"Error response: {response.text}")
-        
         assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
+        
         created_translocation = response.json()
+        print(f"Created translocation ID: {created_translocation.get('id', 'No ID')}")
         
         # Verify the created translocation has all required fields
-        required_fields = ["id", "species", "number_of_animals", "month", "year", 
-                          "source_reserve", "recipient_reserve", "transport_mode", 
-                          "additional_notes", "created_at"]
+        required_fields = ["id", "project_title", "species", "number_of_animals", "year", 
+                          "source_area", "recipient_area", "transport", 
+                          "special_project", "additional_info", "created_at"]
         
         for field in required_fields:
             assert field in created_translocation, f"Created translocation missing required field: {field}"
         
         # Verify the data matches what we sent
+        assert created_translocation["project_title"] == new_translocation["project_title"]
         assert created_translocation["species"] == new_translocation["species"]
         assert created_translocation["number_of_animals"] == new_translocation["number_of_animals"]
-        assert created_translocation["month"] == new_translocation["month"]
         assert created_translocation["year"] == new_translocation["year"]
-        assert created_translocation["transport_mode"] == new_translocation["transport_mode"]
-        assert created_translocation["additional_notes"] == new_translocation["additional_notes"]
+        assert created_translocation["transport"] == new_translocation["transport"]
+        assert created_translocation["special_project"] == new_translocation["special_project"]
+        assert created_translocation["additional_info"] == new_translocation["additional_info"]
         
-        # Verify source and recipient reserves
-        for location_type in ["source_reserve", "recipient_reserve"]:
-            assert created_translocation[location_type]["name"] == new_translocation[location_type]["name"]
-            assert created_translocation[location_type]["country"] == new_translocation[location_type]["country"]
-            assert created_translocation[location_type]["latitude"] == new_translocation[location_type]["latitude"]
-            assert created_translocation[location_type]["longitude"] == new_translocation[location_type]["longitude"]
+        # 2. UPDATE: Update the created translocation
+        translocation_id = created_translocation["id"]
+        updated_data = new_translocation.copy()
+        updated_data["number_of_animals"] = 15
+        updated_data["additional_info"] = "Updated: Lion pride relocation with additional animals"
         
-        print("✅ Create translocation test passed!")
+        print(f"Updating translocation with ID: {translocation_id}...")
+        response = requests.put(
+            f"{API_URL}/translocations/{translocation_id}",
+            json=updated_data
+        )
+        
+        print(f"Status Code: {response.status_code}")
+        assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
+        
+        updated_translocation = response.json()
+        assert updated_translocation["number_of_animals"] == 15, f"Expected updated number_of_animals to be 15, got {updated_translocation['number_of_animals']}"
+        assert updated_translocation["additional_info"] == updated_data["additional_info"], "Additional info was not updated correctly"
+        
+        # 3. DELETE: Delete the created translocation
+        print(f"Deleting translocation with ID: {translocation_id}...")
+        response = requests.delete(f"{API_URL}/translocations/{translocation_id}")
+        
+        print(f"Status Code: {response.status_code}")
+        assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
+        
+        # Verify the translocation was deleted
+        response = requests.get(f"{API_URL}/translocations")
+        translocations = response.json()
+        translocation_ids = [t["id"] for t in translocations]
+        assert translocation_id not in translocation_ids, f"Translocation with ID {translocation_id} was not deleted"
+        
+        print("✅ CRUD operations test passed!")
         return True
     except Exception as e:
-        print(f"❌ Create translocation test failed: {str(e)}")
+        print(f"❌ CRUD operations test failed: {str(e)}")
         return False
 
 def run_all_tests():
     """Run all tests and return overall success status"""
     print_separator()
-    print("WILDLIFE CONSERVATION DASHBOARD API TESTS")
+    print("CONSERVATION SOLUTIONS TRANSLOCATION DASHBOARD API TESTS")
     print_separator()
+    
+    # First, import the complete dataset to ensure we have data to test with
+    print("Importing complete historical dataset...")
+    requests.post(f"{API_URL}/translocations/import-complete-excel-data")
     
     test_results = {
         "Health Check": test_health_check(),
-        "Create Sample Data": test_create_sample_data(),
         "Get All Translocations": test_get_translocations(),
+        "Import Complete Excel Data": test_import_complete_excel_data(),
         "Get Translocation Stats": test_get_translocation_stats(),
         "Filtered Translocations": test_filtered_translocations(),
-        "Create Translocation": test_create_translocation()
+        "CRUD Operations": test_create_update_delete_translocation()
     }
     
     print_separator()
