@@ -609,6 +609,10 @@ async def import_excel_file(file: UploadFile = File(...)):
         }
         
     except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Error processing file: {str(e)}")
+        print(f"Detailed error: {error_details}")
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
     
     # Clear existing data
