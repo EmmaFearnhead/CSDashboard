@@ -760,14 +760,21 @@ const FileUploadComponent = ({ onFileUpload, loading, onCancel }) => {
   };
 
   const isValidFile = selectedFile && (
-    selectedFile.name.endsWith('.xlsx') || 
-    selectedFile.name.endsWith('.xls') || 
-    selectedFile.name.endsWith('.csv')
+    selectedFile.name.toLowerCase().endsWith('.xlsx') || 
+    selectedFile.name.toLowerCase().endsWith('.xls') || 
+    selectedFile.name.toLowerCase().endsWith('.csv') ||
+    selectedFile.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    selectedFile.type === 'application/vnd.ms-excel' ||
+    selectedFile.type === 'text/csv'
   );
 
   // Debug logging
   console.log('FileUpload Debug:', {
-    selectedFile: selectedFile ? selectedFile.name : 'None',
+    selectedFile: selectedFile ? {
+      name: selectedFile.name,
+      type: selectedFile.type,
+      size: selectedFile.size
+    } : 'None',
     isValidFile,
     loading
   });
