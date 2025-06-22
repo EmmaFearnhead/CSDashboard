@@ -566,8 +566,18 @@ async def import_excel_file(file: UploadFile = File(...)):
                 # Clean up special_project and transport values
                 if special_project.lower() in ['nan', 'none', '']:
                     special_project = ""
+                
+                # Ensure transport is a valid enum value
                 if transport.lower() not in ['road', 'air']:
                     transport = "Road"
+                else:
+                    # Capitalize first letter to match enum
+                    transport = transport.capitalize()
+                
+                # Ensure special_project is a valid enum value
+                valid_special_projects = ["Peace Parks", "African Parks", "Rhino Rewild", ""]
+                if special_project not in valid_special_projects:
+                    special_project = ""
                 
                 # Create translocation record
                 translocation_data = {
