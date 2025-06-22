@@ -821,6 +821,13 @@ function App() {
       filtered = filtered.filter(t => t.special_project === filters.special_project);
     }
     
+    console.log('Filtering results:', {
+      originalCount: translocations.length,
+      filteredCount: filtered.length,
+      filters: filters,
+      sampleFiltered: filtered.slice(0, 3).map(t => ({ species: t.species, project: t.project_title, country: t.recipient_area.country }))
+    });
+    
     setFilteredTranslocations(filtered);
   };
 
