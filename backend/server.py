@@ -263,17 +263,19 @@ async def import_excel_file(file: UploadFile = File(...)):
                             lat_str = parts[0].strip()
                             lng_str = parts[1].strip()
                             
-                            # Parse as float but maintain precision when converting back to string
+                            # Parse as float and validate for Google Maps format
                             lat = float(lat_str)
                             lng = float(lng_str)
                             
-                            # Accept all valid coordinates for debugging
-                            if not (isnan(lat) or isnan(lng)):
-                                # Store with original precision maintained
+                            # Validate coordinates are reasonable (global range but Africa-focused)
+                            # Latitude: -90 to 90, Longitude: -180 to 180
+                            # Africa focus: Lat -40 to 40, Lng -25 to 55 
+                            if (-90 <= lat <= 90) and (-180 <= lng <= 180):
+                                # Store with precision maintained for map display
                                 source_coords = f"{lat}, {lng}"
-                                print(f"✅ Stored source coordinates: {source_coords}")
+                                print(f"✅ Valid source coordinates: {source_coords}")
                             else:
-                                print(f"❌ Invalid source coordinates (NaN): {lat}, {lng}")
+                                print(f"❌ Source coordinates outside valid range: lat={lat}, lng={lng}")
                                 source_coords = "0, 0"
                         except ValueError as e:
                             print(f"❌ Failed to parse source coordinates: {e}")
