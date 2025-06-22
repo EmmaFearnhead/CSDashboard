@@ -503,6 +503,12 @@ function App() {
                 </button>
               )}
               <button
+                onClick={() => setShowFileUpload(!showFileUpload)}
+                className="bg-nature-green text-white px-4 py-2 rounded-md hover:bg-forest-green transition-colors shadow-md"
+              >
+                {showFileUpload ? 'Hide Upload' : 'Upload Excel File'}
+              </button>
+              <button
                 onClick={() => {setShowForm(!showForm); setEditingTranslocation(null);}}
                 className="bg-nature-green text-white px-4 py-2 rounded-md hover:bg-forest-green transition-colors shadow-md"
               >
