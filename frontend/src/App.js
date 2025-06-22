@@ -790,14 +790,19 @@ function App() {
                 className="border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
               >
                 <option value="">All Species</option>
-                <option value="elephant">🐘 Elephant</option>
-                <option value="rhino">🦏 Rhino</option>
-                <option value="lion">🦁 Lion</option>
-                <option value="cheetah">🐆 Cheetah</option>
-                <option value="buffalo">🐃 Buffalo</option>
-                <option value="giraffe">🦒 Giraffe</option>
-                <option value="zebra">🦓 Zebra</option>
-                <option value="other">🦌 Other</option>
+                <option value="Elephant">🐘 Elephant</option>
+                <option value="Black Rhino">🦏 Black Rhino</option>
+                <option value="White Rhino">🦏 White Rhino</option>
+                <option value="Lion">🦁 Lion</option>
+                <option value="Buffalo">🐃 Buffalo</option>
+                <option value="Impala">🦌 Impala</option>
+                <option value="Sable">🦌 Sable</option>
+                <option value="Kudu">🦌 Kudu</option>
+                <option value="Warthog">🐗 Warthog</option>
+                <option value="Waterbuck">🦌 Waterbuck</option>
+                <option value="Eland">🦌 Eland</option>
+                <option value="Zebra">🦓 Zebra</option>
+                <option value="Other">🦌 Other</option>
               </select>
 
               <select
@@ -812,17 +817,28 @@ function App() {
               </select>
 
               <select
-                value={filters.transport_mode}
-                onChange={(e) => setFilters({...filters, transport_mode: e.target.value})}
+                value={filters.transport}
+                onChange={(e) => setFilters({...filters, transport: e.target.value})}
                 className="border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
               >
                 <option value="">All Transport</option>
-                <option value="road">🚛 Road</option>
-                <option value="air">✈️ Air</option>
+                <option value="Road">🚛 Road</option>
+                <option value="Air">✈️ Air</option>
+              </select>
+
+              <select
+                value={filters.special_project}
+                onChange={(e) => setFilters({...filters, special_project: e.target.value})}
+                className="border-2 border-sage-green rounded-md px-3 py-2 focus:border-forest-green focus:ring-2 focus:ring-forest-light"
+              >
+                <option value="">All Projects</option>
+                <option value="Peace Parks">🌍 Peace Parks</option>
+                <option value="African Parks">🌿 African Parks</option>
+                <option value="Rhino Rewild">🦏 Rhino Rewild</option>
               </select>
 
               <button
-                onClick={() => setFilters({species: '', year: '', transport_mode: ''})}
+                onClick={() => setFilters({species: '', year: '', transport: '', special_project: ''})}
                 className="bg-nature-brown text-white px-4 py-2 rounded-md hover:bg-earth-brown transition-colors shadow-md"
               >
                 Clear Filters
@@ -835,14 +851,20 @@ function App() {
                   onClick={importHistoricalData}
                   className="bg-forest-green text-white px-4 py-2 rounded-md hover:bg-forest-dark transition-colors shadow-md"
                 >
-                  Load Sample Data
+                  📊 Import Historical Data
                 </button>
               )}
               <button
-                onClick={() => setShowForm(!showForm)}
+                onClick={() => {setShowForm(!showForm); setEditingTranslocation(null);}}
                 className="bg-nature-green text-white px-4 py-2 rounded-md hover:bg-forest-green transition-colors shadow-md"
               >
-                {showForm ? 'Hide Form' : '🌿 Add Translocation'}
+                {showForm ? 'Hide Form' : '🌿 Add New Record'}
+              </button>
+              <button
+                onClick={() => setShowDataTable(!showDataTable)}
+                className="bg-forest-green text-white px-4 py-2 rounded-md hover:bg-forest-dark transition-colors shadow-md"
+              >
+                {showDataTable ? 'Hide Table' : '📋 View/Edit Records'}
               </button>
             </div>
           </div>
