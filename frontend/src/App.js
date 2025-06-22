@@ -529,25 +529,8 @@ function App() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <div className="logo-container mr-6">
-              <img 
-                src="/conservation-logo.svg"
-                alt="Conservation Solutions Logo" 
-                className="h-24 w-auto object-contain"
-                onError={(e) => {
-                  // Fallback to nature emoji if logo fails to load
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'block';
-                }}
-              />
-              <div className="text-6xl text-forest-green hidden">🌿</div>
-            </div>
-            <div>
-              <h1 className="text-4xl font-bold text-forest-dark mb-2">Wildlife Conservation Dashboard</h1>
-              <p className="text-xl text-nature-brown">Tracking Wildlife Translocations Across Africa</p>
-            </div>
-          </div>
+          <h1 className="text-4xl font-bold text-forest-dark mb-2">Wildlife Conservation Dashboard</h1>
+          <p className="text-xl text-nature-brown">Tracking Wildlife Translocations Across Africa</p>
         </div>
 
         {/* Controls */}
