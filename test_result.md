@@ -138,11 +138,11 @@ backend:
 frontend:
   - task: "OpenStreetMap integration with translocation visualization"
     implemented: true
-    working: false
+    working: true
     file: "App.js"
-    stuck_count: 1
+    stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "unknown"
         agent: "main"
@@ -162,6 +162,9 @@ frontend:
       - working: false
         agent: "testing"
         comment: "The map is not displaying at all. Testing revealed multiple issues: 1) The map container (#map) is not being created in the DOM, 2) Leaflet resources (CSS and JS) are not being loaded, 3) Backend API calls to /api/translocations are failing with 500 Internal Server Error due to validation errors in the data model. The backend logs show pydantic validation errors when trying to convert database records to the Translocation model. This prevents the map from receiving data and initializing properly."
+      - working: true
+        agent: "testing"
+        comment: "The map is now displaying correctly after the backend data model issues were fixed. Testing confirmed that the new /api/translocations/clear-and-import endpoint works properly, clearing old conflicting data and importing fresh historical data. The map shows with a blue background and displays markers and route lines for wildlife translocations. The statistics panel updates correctly with species counts. The map is interactive, allowing zoom and pan operations. There are no 500 errors when retrieving translocation data."
 
   - task: "Translocation form for adding new records"
     implemented: true
