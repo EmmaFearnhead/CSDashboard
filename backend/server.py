@@ -417,6 +417,7 @@ async def import_excel_file(file: UploadFile = File(...)):
                 transport_val = row[found_columns.get('transport', '')]
                 transport = str(transport_val) if not pd.isna(transport_val) else "Road"
                 if transport.lower() not in ['road', 'air']:
+                    print(f"WARNING: Invalid transport '{transport}', defaulting to 'Road'")
                     transport = "Road"
                 else:
                     transport = transport.capitalize()
