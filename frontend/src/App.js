@@ -555,26 +555,6 @@ function App() {
           </div>
         )}
 
-        {/* Quick Upload Button for Easy Access */}
-        {!showFileUpload && !showForm && translocations.length > 0 && (
-          <div className="mb-6">
-            <div className="bg-gradient-to-r from-nature-green to-forest-green p-4 rounded-lg shadow-lg border-l-4 border-forest-dark">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-bold text-white mb-1">Update Your Data</h3>
-                  <p className="text-green-100 text-sm">Upload your corrected Excel file to update locations and coordinates</p>
-                </div>
-                <button
-                  onClick={() => setShowFileUpload(true)}
-                  className="bg-white text-nature-green px-6 py-3 rounded-md hover:bg-gray-100 transition-colors shadow-md font-semibold"
-                >
-                  Upload Excel File
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Data Table */}
         {showDataTable && (
           <div className="mb-6">
