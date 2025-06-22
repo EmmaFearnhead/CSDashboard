@@ -302,8 +302,11 @@ async def import_excel_file(file: UploadFile = File(...)):
                     except:
                         number_of_animals = 1
                 
-                # Source area
-                source_name = str(row[source_name_col]) if source_name_col and not pd.isna(row[source_name_col]) else "Unknown Source"
+                # Source area - preserve exact names from spreadsheet
+                source_name_val = row[source_name_col] if source_name_col and not pd.isna(row[source_name_col]) else None
+                source_name = str(source_name_val).strip() if source_name_val is not None else "Unknown Source"
+                # Don't modify the name, keep it exactly as in spreadsheet
+                
                 source_coords = "0, 0"
                 if source_coord_col and not pd.isna(row[source_coord_col]):
                     coord_str = str(row[source_coord_col])
@@ -313,10 +316,15 @@ async def import_excel_file(file: UploadFile = File(...)):
                     if len(coord_match) >= 2:
                         source_coords = f"{coord_match[0]}, {coord_match[1]}"
                 
-                source_country = str(row[source_country_col]) if source_country_col and not pd.isna(row[source_country_col]) else "Unknown"
+                source_country_val = row[source_country_col] if source_country_col and not pd.isna(row[source_country_col]) else None
+                source_country = str(source_country_val).strip() if source_country_val is not None else "Unknown"
+                # Don't modify the country name, keep it exactly as in spreadsheet
                 
-                # Destination area
-                dest_name = str(row[dest_name_col]) if dest_name_col and not pd.isna(row[dest_name_col]) else "Unknown Destination"
+                # Destination area - preserve exact names from spreadsheet
+                dest_name_val = row[dest_name_col] if dest_name_col and not pd.isna(row[dest_name_col]) else None
+                dest_name = str(dest_name_val).strip() if dest_name_val is not None else "Unknown Destination"
+                # Don't modify the name, keep it exactly as in spreadsheet
+                
                 dest_coords = "0, 0"
                 if dest_coord_col and not pd.isna(row[dest_coord_col]):
                     coord_str = str(row[dest_coord_col])
@@ -325,7 +333,9 @@ async def import_excel_file(file: UploadFile = File(...)):
                     if len(coord_match) >= 2:
                         dest_coords = f"{coord_match[0]}, {coord_match[1]}"
                 
-                dest_country = str(row[dest_country_col]) if dest_country_col and not pd.isna(row[dest_country_col]) else "Unknown"
+                dest_country_val = row[dest_country_col] if dest_country_col and not pd.isna(row[dest_country_col]) else None
+                dest_country = str(dest_country_val).strip() if dest_country_val is not None else "Unknown"
+                # Don't modify the country name, keep it exactly as in spreadsheet
                 
                 # Transport
                 transport = "Road"
