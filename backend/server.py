@@ -314,10 +314,16 @@ async def import_excel_file(file: UploadFile = File(...)):
         created_translocations = []
         errors = []
         
+        print(f"Starting to process {len(df)} rows...")
+        
         for index, row in df.iterrows():
             try:
+                print(f"\n=== Processing row {index+1} ===")
+                print(f"Raw row data: {dict(row)}")
+                
                 # Extract data with proper error handling
                 project_title = str(row[found_columns['project_title']]) if not pd.isna(row[found_columns['project_title']]) else f"Project {index+1}"
+                print(f"Project title: {project_title}")
                 
                 # Handle year conversion
                 year_val = row[found_columns['year']]
@@ -325,6 +331,7 @@ async def import_excel_file(file: UploadFile = File(...)):
                     year = 2024
                 else:
                     year = int(float(str(year_val)))
+                print(f"Year: {year}")
                 
                 # Handle number of animals
                 number_val = row[found_columns['number_of_animals']]
@@ -335,34 +342,43 @@ async def import_excel_file(file: UploadFile = File(...)):
                         number_of_animals = int(float(str(number_val)))
                     except:
                         number_of_animals = 1
+                print(f"Number of animals: {number_of_animals}")
                 
                 # Get additional info first for species categorization
                 additional_info_val = row[found_columns.get('additional_info', '')]
                 additional_info = str(additional_info_val) if not pd.isna(additional_info_val) else ""
                 if additional_info == 'nan':
                     additional_info = ""
+                print(f"Additional info: {additional_info}")
                 
                 # Categorize species
                 original_species = row[found_columns['species']] if not pd.isna(row[found_columns['species']]) else ""
                 species = categorize_species(original_species, additional_info)
+                print(f"Original species: {original_species} -> Categorized: {species}")
                 
                 # Source area
                 source_name_val = row[found_columns.get('source_name', '')]
                 source_name = str(source_name_val) if not pd.isna(source_name_val) else "Unknown Source"
+                print(f"Source name: {source_name}")
                 
                 source_coordinates = validate_coordinates(row[found_columns.get('source_coordinates', '')])
+                print(f"Source coordinates: {source_coordinates}")
                 
                 source_country_val = row[found_columns.get('source_country', '')]
                 source_country = str(source_country_val) if not pd.isna(source_country_val) else "Unknown"
+                print(f"Source country: {source_country}")
                 
                 # Recipient area
                 recipient_name_val = row[found_columns.get('recipient_name', '')]
                 recipient_name = str(recipient_name_val) if not pd.isna(recipient_name_val) else "Unknown Recipient"
+                print(f"Recipient name: {recipient_name}")
                 
                 recipient_coordinates = validate_coordinates(row[found_columns.get('recipient_coordinates', '')])
+                print(f"Recipient coordinates: {recipient_coordinates}")
                 
                 recipient_country_val = row[found_columns.get('recipient_country', '')]
                 recipient_country = str(recipient_country_val) if not pd.isna(recipient_country_val) else "Unknown"
+                print(f"Recipient country: {recipient_country}")
                 
                 # Transport and special project
                 transport_val = row[found_columns.get('transport', '')]
@@ -371,6 +387,7 @@ async def import_excel_file(file: UploadFile = File(...)):
                     transport = "Road"
                 else:
                     transport = transport.capitalize()
+                print(f"Transport: {transport}")
                 
                 special_project_val = row[found_columns.get('special_project', '')]
                 special_project = str(special_project_val) if not pd.isna(special_project_val) else ""
@@ -381,6 +398,7 @@ async def import_excel_file(file: UploadFile = File(...)):
                 valid_special_projects = ["Peace Parks", "African Parks", "Rhino Rewild", ""]
                 if special_project not in valid_special_projects:
                     special_project = ""
+                print(f"Special project: {special_project}")
                 
                 # Create translocation record
                 translocation_data = {
@@ -403,15 +421,21 @@ async def import_excel_file(file: UploadFile = File(...)):
                     "additional_info": additional_info
                 }
                 
-                print(f"Processing row {index+1}: {project_title}, {species}, {number_of_animals}")
+                print(f"About to create Translocation object with data: {translocation_data}")
                 
                 translocation_obj = Translocation(**translocation_data)
+                print(f"Created Translocation object successfully")
+                
                 result = await db.translocations.insert_one(translocation_obj.dict())
+                print(f"Inserted into database with ID: {result.inserted_id}")
+                
                 created_translocations.append(translocation_obj)
+                print(f"Row {index+1} processed successfully!")
                 
             except Exception as row_error:
                 error_msg = f"Error processing row {index+1}: {str(row_error)}"
-                print(error_msg)
+                print(f"ERROR: {error_msg}")
+                print(f"Full traceback: {traceback.format_exc()}")
                 errors.append(error_msg)
                 continue  # Skip problematic rows but continue processing
         
