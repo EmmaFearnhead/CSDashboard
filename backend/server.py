@@ -1,35 +1,28 @@
-from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, File
-from fastapi.responses import JSONResponse
-from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
+# 1. Imports
 import os
-import logging
-from pathlib import Path
-from pydantic import BaseModel, Field
-from typing import List, Optional
-import uuid
-from datetime import datetime
-from enum import Enum
 import pandas as pd
 import io
+import logging
+import uuid
+from datetime import datetime
+from typing import List, Optional
+from enum import Enum
 
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+# FastAPI and Database
+from fastapi import FastAPI, APIRouter, HTTPException, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+from motor.motor_asyncio import AsyncIOMotorClient
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# 2. MongoDB Setup
+MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
+DATABASE_NAME = "conservation_dashboard"
 
-# Create the main app without a prefix
-app = FastAPI()
+client = AsyncIOMotorClient(MONGO_URL)
+db = client[DATABASE_NAME]
 
-# Create a router with the /api prefix
-api_router = APIRouter(prefix="/api")
-
-# Enums
-class TransportMode(str, Enum):
+# 3. Pydantic Models
+class Transport(str, Enum):
     ROAD = "Road"
     AIR = "Air"
 
@@ -52,17 +45,6 @@ class Location(BaseModel):
     coordinates: str
     country: str
 
-class TranslocationCreate(BaseModel):
-    project_title: str
-    year: int
-    species: Species
-    number_of_animals: int
-    source_area: Location
-    recipient_area: Location
-    transport: TransportMode
-    special_project: Optional[SpecialProject] = SpecialProject.NONE
-    additional_info: Optional[str] = ""
-
 class Translocation(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     project_title: str
@@ -71,45 +53,29 @@ class Translocation(BaseModel):
     number_of_animals: int
     source_area: Location
     recipient_area: Location
-    transport: TransportMode
-    special_project: SpecialProject
-    additional_info: str
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    transport: Transport
+    special_project: str = ""
+    additional_info: str = ""
+    created_at: datetime = Field(default_factory=datetime.now)
 
-# Routes
+# 4. API Setup
+app = FastAPI()
+api_router = APIRouter()
+
+# API endpoints
 @api_router.get("/")
-async def root():
+async def health_check():
     return {"message": "Wildlife Conservation Dashboard API"}
 
-@api_router.post("/translocations", response_model=Translocation)
-async def create_translocation(translocation: TranslocationCreate):
-    translocation_dict = translocation.dict()
-    translocation_obj = Translocation(**translocation_dict)
-    await db.translocations.insert_one(translocation_obj.dict())
-    return translocation_obj
-
-@api_router.get("/translocations", response_model=List[Translocation])
-async def get_translocations(
-    species: Optional[Species] = None,
-    year: Optional[int] = None,
-    transport: Optional[TransportMode] = None,
-    special_project: Optional[SpecialProject] = None
-):
-    filter_dict = {}
-    if species:
-        filter_dict["species"] = species
-    if year:
-        filter_dict["year"] = year
-    if transport:
-        filter_dict["transport"] = transport
-    if special_project:
-        filter_dict["special_project"] = special_project
-    
-    translocations = await db.translocations.find(filter_dict).to_list(1000)
-    return [Translocation(**translocation) for translocation in translocations]
+@api_router.get("/translocations")
+async def get_translocations():
+    translocations = []
+    async for translocation in db.translocations.find():
+        translocations.append(translocation)
+    return translocations
 
 @api_router.get("/translocations/stats")
-async def get_translocation_stats():
+async def get_stats():
     pipeline = [
         {
             "$group": {
@@ -119,8 +85,30 @@ async def get_translocation_stats():
             }
         }
     ]
-    stats = await db.translocations.aggregate(pipeline).to_list(100)
-    return {stat["_id"]: {"total_animals": stat["total_animals"], "total_translocations": stat["total_translocations"]} for stat in stats}
+    
+    stats = {}
+    async for result in db.translocations.aggregate(pipeline):
+        stats[result["_id"]] = {
+            "total_animals": result["total_animals"],
+            "total_translocations": result["total_translocations"]
+        }
+    
+    return stats
+
+@api_router.post("/translocations")
+async def create_translocation(translocation: Translocation):
+    result = await db.translocations.insert_one(translocation.dict())
+    return {"id": str(result.inserted_id), "message": "Translocation created successfully"}
+
+@api_router.put("/translocations/{translocation_id}")
+async def update_translocation(translocation_id: str, translocation: Translocation):
+    result = await db.translocations.update_one(
+        {"id": translocation_id},
+        {"$set": translocation.dict()}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Translocation not found")
+    return {"message": "Translocation updated successfully"}
 
 @api_router.delete("/translocations/{translocation_id}")
 async def delete_translocation(translocation_id: str):
@@ -129,222 +117,16 @@ async def delete_translocation(translocation_id: str):
         raise HTTPException(status_code=404, detail="Translocation not found")
     return {"message": "Translocation deleted successfully"}
 
-@api_router.put("/translocations/{translocation_id}", response_model=Translocation)
-async def update_translocation(translocation_id: str, translocation: TranslocationCreate):
-    translocation_dict = translocation.dict()
-    result = await db.translocations.update_one(
-        {"id": translocation_id}, 
-        {"$set": translocation_dict}
-    )
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Translocation not found")
-    
-    updated_translocation = await db.translocations.find_one({"id": translocation_id})
-    return Translocation(**updated_translocation)
-
-@api_router.post("/translocations/clear-and-import")
-async def clear_and_import_historical_data():
-    """Clear existing data and import fresh historical translocation data"""
-    
-    # Clear existing data
-    await db.translocations.delete_many({})
-    
-    historical_data = [
-        # 2016-2017 Projects
-        {
-            "project_title": "500 Elephants",
-            "year": 2016,
-            "species": "Elephant",
-            "number_of_animals": 500,
-            "source_area": {"name": "Liwonde National Park", "coordinates": "-14.843917, 35.346718", "country": "Malawi"},
-            "recipient_area": {"name": "Nkhotakota National Park", "coordinates": "-12.798572, 34.011480", "country": "Malawi"},
-            "transport": "Road",
-            "special_project": "African Parks",
-            "additional_info": ""
-        },
-        {
-            "project_title": "500 Elephants",
-            "year": 2017,
-            "species": "Elephant", 
-            "number_of_animals": 150,
-            "source_area": {"name": "Liwonde National Park", "coordinates": "-14.843917, 35.346718", "country": "Malawi"},
-            "recipient_area": {"name": "Nkhotakota National Park", "coordinates": "-12.798572, 34.011480", "country": "Malawi"},
-            "transport": "Road",
-            "special_project": "African Parks",
-            "additional_info": ""
-        },
-        {
-            "project_title": "Buffalo Kloof Elies",
-            "year": 2017,
-            "species": "Elephant",
-            "number_of_animals": 10,
-            "source_area": {"name": "Mankgawe Private Game Reserve", "coordinates": "-25.143589, 27.392797", "country": "South Africa"},
-            "recipient_area": {"name": "Buffalo Kloof", "coordinates": "-33.408619, 25.608082", "country": "South Africa"},
-            "transport": "Road",
-            "special_project": "",
-            "additional_info": ""
-        },
-        {
-            "project_title": "Black Rhino Akagera",
-            "year": 2017,
-            "species": "Black Rhino",
-            "number_of_animals": 18,
-            "source_area": {"name": "Thaba Tholo", "coordinates": "-24.528100, 27.865000", "country": "South Africa"},
-            "recipient_area": {"name": "Akagera National Park", "coordinates": "-1.879435, 30.796346", "country": "Rwanda"},
-            "transport": "Air",
-            "special_project": "African Parks",
-            "additional_info": ""
-        },
-        {
-            "project_title": "Nyika Elephants",
-            "year": 2017,
-            "species": "Elephant",
-            "number_of_animals": 34,
-            "source_area": {"name": "Liwonde National Park", "coordinates": "-14.843917, 35.346718", "country": "Malawi"},
-            "recipient_area": {"name": "Nyika National Park", "coordinates": "-10.796818, 33.752034", "country": "Malawi"},
-            "transport": "Road",
-            "special_project": "African Parks",
-            "additional_info": ""
-        },
-        {
-            "project_title": "Zimbabwe Elephant Nursery",
-            "year": 2018,
-            "species": "Elephant",
-            "number_of_animals": 6,
-            "source_area": {"name": "Zimbabwe Elephant Nursery", "coordinates": "-18.860278, 31.250754", "country": "Zimbabwe"},
-            "recipient_area": {"name": "Panda Masuie National Park", "coordinates": "-18.878660, 25.878660", "country": "Zimbabwe"},
-            "transport": "Road",
-            "special_project": "",
-            "additional_info": ""
-        },
-        {
-            "project_title": "Zinave Elephant",
-            "year": 2018,
-            "species": "Elephant",
-            "number_of_animals": 29,
-            "source_area": {"name": "Liwonde National Park", "coordinates": "-14.843917, 35.346718", "country": "Malawi"},
-            "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.878662, 33.549869", "country": "Mozambique"},
-            "transport": "Road",
-            "special_project": "Peace Parks",
-            "additional_info": ""
-        },
-        {
-            "project_title": "Zinave Elephant",
-            "year": 2018,
-            "species": "Elephant",
-            "number_of_animals": 34,
-            "source_area": {"name": "Liwonde National Park", "coordinates": "-14.843917, 35.346718", "country": "Malawi"},
-            "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.878662, 33.549869", "country": "Mozambique"},
-            "transport": "Road",
-            "special_project": "Peace Parks",
-            "additional_info": ""
-        },
-        {
-            "project_title": "Moremi Giants",
-            "year": 2019,
-            "species": "Elephant",
-            "number_of_animals": 195,
-            "source_area": {"name": "Venetia Limpopo Nature Reserve", "coordinates": "-22.363459, 29.506456", "country": "South Africa"},
-            "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.878662, 33.549869", "country": "Mozambique"},
-            "transport": "Road",
-            "special_project": "Peace Parks",
-            "additional_info": ""
-        },
-        {
-            "project_title": "Gourundi Rhino",
-            "year": 2019,
-            "species": "Black Rhino",
-            "number_of_animals": 9,
-            "source_area": {"name": "Thaba Tholo", "coordinates": "-24.528100, 27.865000", "country": "South Africa"},
-            "recipient_area": {"name": "Gourundi", "coordinates": "-4.215402, 34.215402", "country": "Tanzania"},
-            "transport": "Air",
-            "special_project": "",
-            "additional_info": ""
-        },
-        {
-            "project_title": "Senabianda Bull",
-            "year": 2020,
-            "species": "Elephant",
-            "number_of_animals": 1,
-            "source_area": {"name": "Tembe Elephant Park", "coordinates": "-27.047303, 32.476061", "country": "South Africa"},
-            "recipient_area": {"name": "Senabianda", "coordinates": "-27.500906, 31.346564", "country": "South Africa"},
-            "transport": "Road",
-            "special_project": "",
-            "additional_info": ""
-        },
-        {
-            "project_title": "Buffalo Kloof Bulls",
-            "year": 2020,
-            "species": "Elephant",
-            "number_of_animals": 2,
-            "source_area": {"name": "Tembe Elephant Park", "coordinates": "-27.047303, 32.476061", "country": "South Africa"},
-            "recipient_area": {"name": "Buffalo Kloof", "coordinates": "-33.539447, 25.391063", "country": "South Africa"},
-            "transport": "Road",
-            "special_project": "",
-            "additional_info": ""
-        },
-        {
-            "project_title": "Orphan Rhino",
-            "year": 2020,
-            "species": "White Rhino",
-            "number_of_animals": 2,
-            "source_area": {"name": "Buyeni Hluhluwe Community Reserve", "coordinates": "-28.845409, 32.064013", "country": "South Africa"},
-            "recipient_area": {"name": "Buffalo Kloof", "coordinates": "-33.539447, 25.391063", "country": "South Africa"},
-            "transport": "Road",
-            "special_project": "",
-            "additional_info": ""
-        },
-        {
-            "project_title": "Maputo National Park Elephants",
-            "year": 2020,
-            "species": "Elephant",
-            "number_of_animals": 30,
-            "source_area": {"name": "Maputo National Park", "coordinates": "-26.433995, 32.794531", "country": "Mozambique"},
-            "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.878662, 33.549869", "country": "Mozambique"},
-            "transport": "Road",
-            "special_project": "Peace Parks",
-            "additional_info": ""
-        },
-        {
-            "project_title": "Akagera White Rhino",
-            "year": 2021,
-            "species": "White Rhino",
-            "number_of_animals": 30,
-            "source_area": {"name": "Phinda Private Game Reserve", "coordinates": "-27.830400, 32.329010", "country": "South Africa"},
-            "recipient_area": {"name": "Akagera National Park", "coordinates": "-1.879435, 30.796346", "country": "Rwanda"},
-            "transport": "Road",
-            "special_project": "African Parks",
-            "additional_info": ""
-        },
-        {
-            "project_title": "Kasungu Elephants",
-            "year": 2022,
-            "species": "Elephant",
-            "number_of_animals": 263,
-            "source_area": {"name": "Liwonde National Park", "coordinates": "-14.843917, 35.346718", "country": "Malawi"},
-            "recipient_area": {"name": "Kasungu National Park", "coordinates": "-12.897171, 33.750301", "country": "Malawi"},
-            "transport": "Road",
-            "special_project": "African Parks",
-            "additional_info": ""
-        }
-    ]
-    
-    created_translocations = []
-    for data in historical_data:
-        translocation_obj = Translocation(**data)
-        await db.translocations.insert_one(translocation_obj.dict())
-        created_translocations.append(translocation_obj)
-    
 @api_router.post("/translocations/import-simplified-data")
 async def import_simplified_data():
-    """Import translocation data with simplified species categorization"""
+    """Import simplified conservation data with 5 species categories"""
     
     # Clear existing data
     await db.translocations.delete_many({})
     
-    # Import data with simplified species categorization based on user's structure
+    # Simplified dataset with 5 categories: Elephant, Black Rhino, White Rhino, Plains Game Species, Other
     simplified_data = [
-        # Elephants - keep as "Elephant"
+        # Elephants - keep as "Elephant" 
         {"project_title": "500 Elephants", "year": 2016, "species": "Elephant", "number_of_animals": 366, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.843917, 35.346718", "country": "Malawi"}, "recipient_area": {"name": "Nkhotakota National Park", "coordinates": "-12.798572, 34.011480", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": ""},
         {"project_title": "500 Elephants", "year": 2017, "species": "Elephant", "number_of_animals": 156, "source_area": {"name": "Majete Wildlife Reserve", "coordinates": "-16.009218, 35.015772", "country": "Malawi"}, "recipient_area": {"name": "Nkhotakota National Park", "coordinates": "-12.798572, 34.011480", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": ""},
         {"project_title": "Buffalo Kloof Elies", "year": 2017, "species": "Elephant", "number_of_animals": 10, "source_area": {"name": "Mankgawe Private Game Reserve", "coordinates": "-25.144, 27.393", "country": "South Africa"}, "recipient_area": {"name": "Buffalo Kloof", "coordinates": "-33.409, 25.608", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
@@ -655,205 +437,7 @@ async def import_excel_file(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
 
 # 5. Setup FastAPI App
-
-# 5. Setup FastAPI App
-    complete_data = [
-        # 2016 & 2017
-        {"project_title": "500 Elephants", "year": 2016, "species": "Elephant", "number_of_animals": 366, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.843917, 35.346718", "country": "Malawi"}, "recipient_area": {"name": "Nkhotakota National Park", "coordinates": "-12.798572, 34.011480", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": ""},
-        {"project_title": "500 Elephants", "year": 2017, "species": "Elephant", "number_of_animals": 156, "source_area": {"name": "Majete Wildlife Reserve", "coordinates": "-16.009218, 35.015772", "country": "Malawi"}, "recipient_area": {"name": "Nkhotakota National Park", "coordinates": "-12.798572, 34.011480", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": ""},
-        {"project_title": "Buffalo Kloof Elies", "year": 2017, "species": "Elephant", "number_of_animals": 10, "source_area": {"name": "Mankgawe Private Game Reserve", "coordinates": "-25.144, 27.393", "country": "South Africa"}, "recipient_area": {"name": "Buffalo Kloof", "coordinates": "-33.409, 25.608", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Buffalo Kloof Elies", "year": 2017, "species": "Elephant", "number_of_animals": 2, "source_area": {"name": "Mankgawe Private Game Reserve", "coordinates": "-25.144, 27.393", "country": "South Africa"}, "recipient_area": {"name": "Buffalo Kloof", "coordinates": "-33.409, 25.608", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Black Rhino Akagera", "year": 2017, "species": "Black Rhino", "number_of_animals": 18, "source_area": {"name": "Thaba Tholo", "coordinates": "-24.528, 27.865", "country": "South Africa"}, "recipient_area": {"name": "Akagera National Park", "coordinates": "-1.879, 30.796", "country": "Rwanda"}, "transport": "Air", "special_project": "African Parks", "additional_info": ""},
-        {"project_title": "Nyika Elephants", "year": 2017, "species": "Elephant", "number_of_animals": 34, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "recipient_area": {"name": "Nyika National Park", "coordinates": "-10.797, 33.752", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": ""},
-        
-        # 2018
-        {"project_title": "Zimbabwe Elephant Nursery", "year": 2018, "species": "Elephant", "number_of_animals": 6, "source_area": {"name": "Zimbabwe Elephant Nursery", "coordinates": "-17.825, 31.053", "country": "Zimbabwe"}, "recipient_area": {"name": "Panda Masuie National Park", "coordinates": "-18.879, 25.879", "country": "Zimbabwe"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Zinave Elephant", "year": 2018, "species": "Elephant", "number_of_animals": 29, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": ""},
-        {"project_title": "Zinave Elephant", "year": 2018, "species": "Elephant", "number_of_animals": 34, "source_area": {"name": "Private Game Reserve", "coordinates": "-27.612, 31.280", "country": "South Africa"}, "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": ""},
-        {"project_title": "Ewangoula Buffalo", "year": 2018, "species": "Plains Game Species", "number_of_animals": 196, "source_area": {"name": "North Luangwa National Park", "coordinates": "-11.889, 32.140", "country": "Zambia"}, "recipient_area": {"name": "Nkhotakota Wetlands", "coordinates": "-11.937, 34.342", "country": "Zambia"}, "transport": "Road", "special_project": "African Parks", "additional_info": "Primary species: Buffalo"},
-        
-        # 2019
-        {"project_title": "Moremi Giants", "year": 2019, "species": "Elephant", "number_of_animals": 101, "source_area": {"name": "Venetia Limpopo Nature Reserve", "coordinates": "-22.363, 29.506", "country": "South Africa"}, "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": ""},
-        {"project_title": "Gourundi Rhino", "year": 2019, "species": "Black Rhino", "number_of_animals": 9, "source_area": {"name": "Thaba Tholo", "coordinates": "-24.528, 27.865", "country": "South Africa"}, "recipient_area": {"name": "Mount Camdeboo", "coordinates": "-4.215, 34.215", "country": "Tanzania"}, "transport": "Air", "special_project": "", "additional_info": ""},
-        {"project_title": "Emergency Relocation Elephant Bull Eastern Cape", "year": 2019, "species": "Elephant", "number_of_animals": 1, "source_area": {"name": "Eastern Cape", "coordinates": "-32.290, 26.408", "country": "South Africa"}, "recipient_area": {"name": "Mount Camdeboo", "coordinates": "-32.219, 24.630", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Liwonde Black Rhino", "year": 2019, "species": "Black Rhino", "number_of_animals": 17, "source_area": {"name": "Ezemvelo", "coordinates": "-28.211, 31.655", "country": "South Africa"}, "recipient_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "transport": "Air", "special_project": "African Parks", "additional_info": ""},
-        {"project_title": "Emergency Relocation Elephant Herd Eastern Cape", "year": 2019, "species": "Elephant", "number_of_animals": 11, "source_area": {"name": "Eastern Cape", "coordinates": "-32.290, 26.408", "country": "South Africa"}, "recipient_area": {"name": "Buffalo Kloof", "coordinates": "-33.409, 25.608", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Zinave Plains Game", "year": 2019, "species": "Plains Game Species", "number_of_animals": 388, "source_area": {"name": "Gouritse South Park and Maputo National Park", "coordinates": "-26.791, 32.699", "country": "Mozambique"}, "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": "Sable, Oryx, Waterbuck & Reedbuck"},
-        
-        # 2020
-        {"project_title": "Senabianda Bull", "year": 2020, "species": "Elephant", "number_of_animals": 1, "source_area": {"name": "Tembe Elephant Park", "coordinates": "-27.047, 32.476", "country": "South Africa"}, "recipient_area": {"name": "Senabianda Community Reserve", "coordinates": "-27.501, 31.347", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Buffalo Kloof Bulls", "year": 2020, "species": "Elephant", "number_of_animals": 2, "source_area": {"name": "Tembe Elephant Park", "coordinates": "-27.047, 32.476", "country": "South Africa"}, "recipient_area": {"name": "Buffalo Kloof", "coordinates": "-33.409, 25.608", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Orphan Rhino", "year": 2020, "species": "White Rhino", "number_of_animals": 2, "source_area": {"name": "Mankgawe Game Reserve", "coordinates": "-27.845, 32.064", "country": "South Africa"}, "recipient_area": {"name": "Senabianda Community Reserve", "coordinates": "-27.594, 31.842", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Maputo National Park Elephants", "year": 2020, "species": "Elephant", "number_of_animals": 30, "source_area": {"name": "Maputo National Park", "coordinates": "-26.434, 32.795", "country": "Mozambique"}, "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": ""},
-        
-        # 2021
-        {"project_title": "Phinda Elephant", "year": 2021, "species": "Elephant", "number_of_animals": 3, "source_area": {"name": "Phinda Game Reserve", "coordinates": "-27.830, 32.329", "country": "South Africa"}, "recipient_area": {"name": "Phinda Private Game Reserve", "coordinates": "-27.830, 32.329", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Akagera White Rhino", "year": 2021, "species": "White Rhino", "number_of_animals": 30, "source_area": {"name": "Phinda Private Game Reserve", "coordinates": "-27.830, 32.329", "country": "South Africa"}, "recipient_area": {"name": "Akagera National Park", "coordinates": "-1.879, 30.796", "country": "Rwanda"}, "transport": "Road", "special_project": "African Parks", "additional_info": ""},
-        {"project_title": "Niassa National Park Buffalo", "year": 2021, "species": "Other", "number_of_animals": 200, "source_area": {"name": "North Luangwa National Park", "coordinates": "-11.889, 32.140", "country": "Zambia"}, "recipient_area": {"name": "Niassa National Park", "coordinates": "-8.796, 37.936", "country": "Mozambique"}, "transport": "Road", "special_project": "", "additional_info": "Primary species: Buffalo"},
-        
-        # 2022
-        {"project_title": "Kasungu Elephants", "year": 2022, "species": "Elephant", "number_of_animals": 263, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "recipient_area": {"name": "Kasungu National Park", "coordinates": "-12.897, 33.750", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": ""},
-        {"project_title": "Zinave White Rhino", "year": 2022, "species": "White Rhino", "number_of_animals": 40, "source_area": {"name": "Hluhluwe Game Reserve", "coordinates": "-28.062, 32.162", "country": "South Africa"}, "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": ""},
-        {"project_title": "Zinave Black Rhino", "year": 2022, "species": "Black Rhino", "number_of_animals": 7, "source_area": {"name": "Hluhluwe Game Reserve", "coordinates": "-27.345, 32.065", "country": "South Africa"}, "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": ""},
-        {"project_title": "Gorongosa Buffalo", "year": 2022, "species": "Other", "number_of_animals": 16, "source_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "recipient_area": {"name": "Gorongosa National Park", "coordinates": "-18.973, 34.536", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": "Primary species: Buffalo"},
-        {"project_title": "Kasungu Plains Game", "year": 2022, "species": "Plains Game Species", "number_of_animals": 423, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "recipient_area": {"name": "Kasungu National Park", "coordinates": "-12.897, 33.750", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": "Buffalo (84); Impala (127); Sable (29); Warthog (86); Kudu (46); Hartebeest (32)"},
-        {"project_title": "Mangochi Plains Game", "year": 2022, "species": "Plains Game Species", "number_of_animals": 221, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "recipient_area": {"name": "Mangochi Forest Reserve", "coordinates": "-14.436, 35.256", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": "Impala (94); Kudu (48); Hartebeest (30); Warthog (36); Sable (12); Waterbuck (12)"},
-        {"project_title": "Niassa Plains Game", "year": 2022, "species": "Plains Game Species", "number_of_animals": 40, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "recipient_area": {"name": "Niassa Forest Reserve", "coordinates": "-14.526, 36.435", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": "Sable (8); Kudu (12); Warthog (14); Eland (6)"},
-        {"project_title": "Nkhotakota plains game", "year": 2022, "species": "Plains Game Species", "number_of_animals": 711, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "recipient_area": {"name": "Nkhotakota National Park", "coordinates": "-12.799, 34.011", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": "Buffalo (96); Impala (217); Sable (96); Warthog (75); Kudu (79)"},
-        {"project_title": "Nkhotakota plains game", "year": 2022, "species": "Plains Game Species", "number_of_animals": 79, "source_area": {"name": "Majete Wildlife Reserve", "coordinates": "-16.009, 35.016", "country": "Malawi"}, "recipient_area": {"name": "Nkhotakota National Park", "coordinates": "-12.799, 34.011", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": "Zebra; Eland; Kudu (36)"},
-        {"project_title": "Nkhotakota plains game", "year": 2022, "species": "Other", "number_of_animals": 15, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "recipient_area": {"name": "Nkhotakota National Park", "coordinates": "-12.799, 34.011", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": "Primary species: Buffalo"},
-        {"project_title": "Liwonde Plains Game", "year": 2022, "species": "Other", "number_of_animals": 25, "source_area": {"name": "Majete Wildlife Reserve", "coordinates": "-16.009, 35.016", "country": "Malawi"}, "recipient_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": "Primary species: Zebra"},
-        {"project_title": "Mangochi Plains Game", "year": 2022, "species": "Other", "number_of_animals": 40, "source_area": {"name": "Majete Wildlife Reserve", "coordinates": "-16.009, 35.016", "country": "Malawi"}, "recipient_area": {"name": "Mangochi Forest Reserve", "coordinates": "-14.436, 35.256", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": "Kudu (22); Hartebeest (18)"},
-        {"project_title": "Zakouma Buffalo", "year": 2022, "species": "Other", "number_of_animals": 268, "source_area": {"name": "Hluhluwe iMfolozi Park", "coordinates": "-28.256, 31.969", "country": "South Africa"}, "recipient_area": {"name": "Simala Moma", "coordinates": "10.531, 19.255", "country": "Chad"}, "transport": "Road", "special_project": "African Parks", "additional_info": "Primary species: Buffalo"},
-        
-        # 2023
-        {"project_title": "Babanango Elephant", "year": 2023, "species": "Elephant", "number_of_animals": 7, "source_area": {"name": "Mankgawe Game Reserve", "coordinates": "-27.845, 32.064", "country": "South Africa"}, "recipient_area": {"name": "Babanango Game Reserve", "coordinates": "-28.340, 31.197", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Babanango Elephant", "year": 2023, "species": "Elephant", "number_of_animals": 8, "source_area": {"name": "Addo Elephant National Park", "coordinates": "-33.390, 25.646", "country": "South Africa"}, "recipient_area": {"name": "Babanango Game Reserve", "coordinates": "-28.340, 31.197", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Namibia Bulls", "year": 2023, "species": "Elephant", "number_of_animals": 2, "source_area": {"name": "Elephant Sands Game Reserve", "coordinates": "-19.981, 24.596", "country": "South Africa"}, "recipient_area": {"name": "Desert Reserve", "coordinates": "-22.938, 18.296", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Zinave White Rhino", "year": 2023, "species": "White Rhino", "number_of_animals": 27, "source_area": {"name": "Mankgawe Game Reserve", "coordinates": "-23.855, 32.125", "country": "South Africa"}, "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": ""},
-        {"project_title": "Zinave Black Rhino", "year": 2023, "species": "Black Rhino", "number_of_animals": 10, "source_area": {"name": "Hluhluwe Game Reserve", "coordinates": "-28.062, 32.125", "country": "South Africa"}, "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": ""},
-        {"project_title": "Zakouma Rhino", "year": 2023, "species": "Black Rhino", "number_of_animals": 6, "source_area": {"name": "Thaba Tholo", "coordinates": "-24.528, 27.865", "country": "South Africa"}, "recipient_area": {"name": "Zakouma National Park", "coordinates": "10.837, 19.831", "country": "Chad"}, "transport": "Air", "special_project": "African Parks", "additional_info": "Plane: C130"},
-        {"project_title": "Akagera Lions", "year": 2023, "species": "Other", "number_of_animals": 7, "source_area": {"name": "Phinda Private Game Reserve", "coordinates": "-27.830, 32.329", "country": "South Africa"}, "recipient_area": {"name": "Akagera National Park", "coordinates": "-1.879, 30.796", "country": "Rwanda"}, "transport": "Air", "special_project": "", "additional_info": "Primary species: Lion"},
-        
-        # Multi-species projects from 2016 onward
-        {"project_title": "Nkhotakota plains game", "year": 2016, "species": "Plains Game Species", "number_of_animals": 1500, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "recipient_area": {"name": "Nkhotakota National Park", "coordinates": "-12.799, 34.011", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": "Buffalo, Impala, Kudu, Sable, Zebra, Warthog, Waterbuck, Hartebeest"},
-        
-        # 2025 Future Projects
-        {"project_title": "Zinave Black Rhino", "year": 2025, "species": "Black Rhino", "number_of_animals": 10, "source_area": {"name": "Hluhluwe Game Reserve", "coordinates": "-27.345, 32.065", "country": "South Africa"}, "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": ""},
-        {"project_title": "Akagera White Rhino", "year": 2025, "species": "White Rhino", "number_of_animals": 70, "source_area": {"name": "Phinda Private Game Reserve", "coordinates": "-27.830, 32.329", "country": "South Africa"}, "recipient_area": {"name": "Akagera National Park", "coordinates": "-1.879, 30.796", "country": "Rwanda"}, "transport": "Air", "special_project": "African Parks", "additional_info": "Two Loads of 35 Rhino - Boeing 747"},
-        {"project_title": "Ngorongoro Crater Rhino", "year": 2025, "species": "White Rhino", "number_of_animals": 17, "source_area": {"name": "Phinda Private Game Reserve", "coordinates": "-27.830, 32.329", "country": "South Africa"}, "recipient_area": {"name": "Ngorongoro Crater", "coordinates": "-3.162, 35.582", "country": "Tanzania"}, "transport": "Air", "special_project": "", "additional_info": "Boeing 767"},
-        {"project_title": "Asante Sana Elephant", "year": 2025, "species": "Elephant", "number_of_animals": 5, "source_area": {"name": "Addo Elephant National Park", "coordinates": "-33.390, 25.646", "country": "South Africa"}, "recipient_area": {"name": "Ubulozi Private Reserve", "coordinates": "-24.635, 30.970", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Addo Elephant", "year": 2025, "species": "Elephant", "number_of_animals": 30, "source_area": {"name": "Addo Elephant National Park", "coordinates": "-33.390, 25.646", "country": "South Africa"}, "recipient_area": {"name": "Addo Elephant National Park", "coordinates": "-24.362, 30.962", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""}
-    ]
-    
-    created_translocations = []
-    for data in complete_data:
-        translocation_obj = Translocation(**data)
-        await db.translocations.insert_one(translocation_obj.dict())
-        created_translocations.append(translocation_obj)
-    
-    return {"message": f"Imported {len(created_translocations)} complete historical translocations with simplified species categorization", "translocations": created_translocations}
-
-
-    await db.translocations.delete_many({})
-    
-    # Complete dataset from Excel file with corrected coordinates
-    complete_data = [
-        # 2016 & 2017
-        {"project_title": "500 Elephants", "year": 2016, "species": "Elephant", "number_of_animals": 366, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.843917, 35.346718", "country": "Malawi"}, "recipient_area": {"name": "Nkhotakota National Park", "coordinates": "-12.798572, 34.011480", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": ""},
-        {"project_title": "500 Elephants", "year": 2017, "species": "Elephant", "number_of_animals": 156, "source_area": {"name": "Majete Wildlife Reserve", "coordinates": "-16.009218, 35.015772", "country": "Malawi"}, "recipient_area": {"name": "Nkhotakota National Park", "coordinates": "-12.798572, 34.011480", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": ""},
-        {"project_title": "Buffalo Kloof Elies", "year": 2017, "species": "Elephant", "number_of_animals": 10, "source_area": {"name": "Mankgawe Private Game Reserve", "coordinates": "-25.144, 27.393", "country": "South Africa"}, "recipient_area": {"name": "Buffalo Kloof", "coordinates": "-33.409, 25.608", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Buffalo Kloof Elies", "year": 2017, "species": "Elephant", "number_of_animals": 2, "source_area": {"name": "Mankgawe Private Game Reserve", "coordinates": "-25.144, 27.393", "country": "South Africa"}, "recipient_area": {"name": "Buffalo Kloof", "coordinates": "-33.409, 25.608", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Black Rhino Akagera", "year": 2017, "species": "Black Rhino", "number_of_animals": 18, "source_area": {"name": "Thaba Tholo", "coordinates": "-24.528, 27.865", "country": "South Africa"}, "recipient_area": {"name": "Akagera National Park", "coordinates": "-1.879, 30.796", "country": "Rwanda"}, "transport": "Air", "special_project": "African Parks", "additional_info": ""},
-        {"project_title": "Nyika Elephants", "year": 2017, "species": "Elephant", "number_of_animals": 34, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "recipient_area": {"name": "Nyika National Park", "coordinates": "-10.797, 33.752", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": ""},
-        
-        # 2018
-        {"project_title": "Zimbabwe Elephant Nursery", "year": 2018, "species": "Elephant", "number_of_animals": 6, "source_area": {"name": "Zimbabwe Elephant Nursery", "coordinates": "-17.825, 31.053", "country": "Zimbabwe"}, "recipient_area": {"name": "Panda Masuie National Park", "coordinates": "-18.879, 25.879", "country": "Zimbabwe"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Zinave Elephant", "year": 2018, "species": "Elephant", "number_of_animals": 29, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": ""},
-        {"project_title": "Zinave Elephant", "year": 2018, "species": "Elephant", "number_of_animals": 34, "source_area": {"name": "Private Game Reserve", "coordinates": "-27.612, 31.280", "country": "South Africa"}, "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": ""},
-        {"project_title": "Ewangoula Buffalo", "year": 2018, "species": "Buffalo", "number_of_animals": 196, "source_area": {"name": "North Luangwa National Park", "coordinates": "-11.889, 32.140", "country": "Zambia"}, "recipient_area": {"name": "Nkhotakota Wetlands", "coordinates": "-11.937, 34.342", "country": "Zambia"}, "transport": "Road", "special_project": "African Parks", "additional_info": ""},
-        
-        # 2019
-        {"project_title": "Moremi Giants", "year": 2019, "species": "Elephant", "number_of_animals": 101, "source_area": {"name": "Venetia Limpopo Nature Reserve", "coordinates": "-22.363, 29.506", "country": "South Africa"}, "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": ""},
-        {"project_title": "Gourundi Rhino", "year": 2019, "species": "Black Rhino", "number_of_animals": 9, "source_area": {"name": "Thaba Tholo", "coordinates": "-24.528, 27.865", "country": "South Africa"}, "recipient_area": {"name": "Mount Camdeboo", "coordinates": "-4.215, 34.215", "country": "Tanzania"}, "transport": "Air", "special_project": "", "additional_info": ""},
-        {"project_title": "Emergency Relocation Elephant Bull Eastern Cape", "year": 2019, "species": "Elephant", "number_of_animals": 1, "source_area": {"name": "Eastern Cape", "coordinates": "-32.290, 26.408", "country": "South Africa"}, "recipient_area": {"name": "Mount Camdeboo", "coordinates": "-32.219, 24.630", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Liwonde Black Rhino", "year": 2019, "species": "Black Rhino", "number_of_animals": 17, "source_area": {"name": "Ezemvelo", "coordinates": "-28.211, 31.655", "country": "South Africa"}, "recipient_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "transport": "Air", "special_project": "African Parks", "additional_info": ""},
-        {"project_title": "Emergency Relocation Elephant Herd Eastern Cape", "year": 2019, "species": "Elephant", "number_of_animals": 11, "source_area": {"name": "Eastern Cape", "coordinates": "-32.290, 26.408", "country": "South Africa"}, "recipient_area": {"name": "Buffalo Kloof", "coordinates": "-33.409, 25.608", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Zinave Plains Game", "year": 2019, "species": "Sable", "number_of_animals": 388, "source_area": {"name": "Gouritse South Park and Maputo National Park", "coordinates": "-26.791, 32.699", "country": "Mozambique"}, "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": "Sable, Oryx, Waterbuck & Reedbuck"},
-        
-        # 2020
-        {"project_title": "Senabianda Bull", "year": 2020, "species": "Elephant", "number_of_animals": 1, "source_area": {"name": "Tembe Elephant Park", "coordinates": "-27.047, 32.476", "country": "South Africa"}, "recipient_area": {"name": "Senabianda Community Reserve", "coordinates": "-27.501, 31.347", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Buffalo Kloof Bulls", "year": 2020, "species": "Elephant", "number_of_animals": 2, "source_area": {"name": "Tembe Elephant Park", "coordinates": "-27.047, 32.476", "country": "South Africa"}, "recipient_area": {"name": "Buffalo Kloof", "coordinates": "-33.409, 25.608", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Orphan Rhino", "year": 2020, "species": "White Rhino", "number_of_animals": 2, "source_area": {"name": "Mankgawe Game Reserve", "coordinates": "-27.845, 32.064", "country": "South Africa"}, "recipient_area": {"name": "Senabianda Community Reserve", "coordinates": "-27.594, 31.842", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Maputo National Park Elephants", "year": 2020, "species": "Elephant", "number_of_animals": 30, "source_area": {"name": "Maputo National Park", "coordinates": "-26.434, 32.795", "country": "Mozambique"}, "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": ""},
-        
-        # 2021
-        {"project_title": "Phinda Elephant", "year": 2021, "species": "Elephant", "number_of_animals": 3, "source_area": {"name": "Phinda Game Reserve", "coordinates": "-27.830, 32.329", "country": "South Africa"}, "recipient_area": {"name": "Phinda Private Game Reserve", "coordinates": "-27.830, 32.329", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Akagera White Rhino", "year": 2021, "species": "White Rhino", "number_of_animals": 30, "source_area": {"name": "Phinda Private Game Reserve", "coordinates": "-27.830, 32.329", "country": "South Africa"}, "recipient_area": {"name": "Akagera National Park", "coordinates": "-1.879, 30.796", "country": "Rwanda"}, "transport": "Road", "special_project": "African Parks", "additional_info": ""},
-        {"project_title": "Niassa National Park Buffalo", "year": 2021, "species": "Buffalo", "number_of_animals": 200, "source_area": {"name": "North Luangwa National Park", "coordinates": "-11.889, 32.140", "country": "Zambia"}, "recipient_area": {"name": "Niassa National Park", "coordinates": "-8.796, 37.936", "country": "Mozambique"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        
-        # 2022
-        {"project_title": "Kasungu Elephants", "year": 2022, "species": "Elephant", "number_of_animals": 263, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "recipient_area": {"name": "Kasungu National Park", "coordinates": "-12.897, 33.750", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": ""},
-        {"project_title": "Zinave White Rhino", "year": 2022, "species": "White Rhino", "number_of_animals": 40, "source_area": {"name": "Hluhluwe Game Reserve", "coordinates": "-28.062, 32.162", "country": "South Africa"}, "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": ""},
-        {"project_title": "Zinave Black Rhino", "year": 2022, "species": "Black Rhino", "number_of_animals": 7, "source_area": {"name": "Hluhluwe Game Reserve", "coordinates": "-27.345, 32.065", "country": "South Africa"}, "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": ""},
-        {"project_title": "Gorongosa Buffalo", "year": 2022, "species": "Buffalo", "number_of_animals": 16, "source_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "recipient_area": {"name": "Gorongosa National Park", "coordinates": "-18.973, 34.536", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": ""},
-        {"project_title": "Kasungu Plains Game", "year": 2022, "species": "Buffalo", "number_of_animals": 423, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "recipient_area": {"name": "Kasungu National Park", "coordinates": "-12.897, 33.750", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": "Buffalo (84); Impala (127); Sable (29); Warthog (86); Kudu (46); Hartebeest (32)"},
-        {"project_title": "Mangochi Plains Game", "year": 2022, "species": "Impala", "number_of_animals": 221, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "recipient_area": {"name": "Mangochi Forest Reserve", "coordinates": "-14.436, 35.256", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": "Impala (94); Kudu (48); Hartebeest (30); Warthog (36); Sable (12); Waterbuck (12)"},
-        {"project_title": "Niassa Plains Game", "year": 2022, "species": "Sable", "number_of_animals": 40, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "recipient_area": {"name": "Niassa Forest Reserve", "coordinates": "-14.526, 36.435", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": "Sable (8); Kudu (12); Warthog (14); Eland (6)"},
-        {"project_title": "Nkhotakota plains game", "year": 2022, "species": "Buffalo", "number_of_animals": 711, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "recipient_area": {"name": "Nkhotakota National Park", "coordinates": "-12.799, 34.011", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": "Buffalo (96); Impala (217); Sable (96); Warthog (75); Kudu (79)"},
-        {"project_title": "Nkhotakota plains game", "year": 2022, "species": "Zebra", "number_of_animals": 79, "source_area": {"name": "Majete Wildlife Reserve", "coordinates": "-16.009, 35.016", "country": "Malawi"}, "recipient_area": {"name": "Nkhotakota National Park", "coordinates": "-12.799, 34.011", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": "Eland Kudu (36)"},
-        {"project_title": "Nkhotakota plains game", "year": 2022, "species": "Buffalo", "number_of_animals": 15, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "recipient_area": {"name": "Nkhotakota National Park", "coordinates": "-12.799, 34.011", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": ""},
-        {"project_title": "Liwonde Plains Game", "year": 2022, "species": "Zebra", "number_of_animals": 25, "source_area": {"name": "Majete Wildlife Reserve", "coordinates": "-16.009, 35.016", "country": "Malawi"}, "recipient_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": ""},
-        {"project_title": "Mangochi Plains Game", "year": 2022, "species": "Kudu", "number_of_animals": 40, "source_area": {"name": "Majete Wildlife Reserve", "coordinates": "-16.009, 35.016", "country": "Malawi"}, "recipient_area": {"name": "Mangochi Forest Reserve", "coordinates": "-14.436, 35.256", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": "Kudu (22); Hartebeest (18)"},
-        {"project_title": "Zakouma Buffalo", "year": 2022, "species": "Buffalo", "number_of_animals": 268, "source_area": {"name": "Hluhluwe iMfolozi Park", "coordinates": "-28.256, 31.969", "country": "South Africa"}, "recipient_area": {"name": "Simala Moma", "coordinates": "10.531, 19.255", "country": "Chad"}, "transport": "Road", "special_project": "African Parks", "additional_info": ""},
-        
-        # 2023
-        {"project_title": "Babanango Elephant", "year": 2023, "species": "Elephant", "number_of_animals": 7, "source_area": {"name": "Mankgawe Game Reserve", "coordinates": "-27.845, 32.064", "country": "South Africa"}, "recipient_area": {"name": "Babanango Game Reserve", "coordinates": "-28.340, 31.197", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Babanango Elephant", "year": 2023, "species": "Elephant", "number_of_animals": 8, "source_area": {"name": "Addo Elephant National Park", "coordinates": "-33.390, 25.646", "country": "South Africa"}, "recipient_area": {"name": "Babanango Game Reserve", "coordinates": "-28.340, 31.197", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Namibia Bulls", "year": 2023, "species": "Elephant", "number_of_animals": 2, "source_area": {"name": "Elephant Sands Game Reserve", "coordinates": "-19.981, 24.596", "country": "South Africa"}, "recipient_area": {"name": "Desert Reserve", "coordinates": "-22.938, 18.296", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Zinave White Rhino", "year": 2023, "species": "White Rhino", "number_of_animals": 27, "source_area": {"name": "Mankgawe Game Reserve", "coordinates": "-23.855, 32.125", "country": "South Africa"}, "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": ""},
-        {"project_title": "Zinave Black Rhino", "year": 2023, "species": "Black Rhino", "number_of_animals": 10, "source_area": {"name": "Hluhluwe Game Reserve", "coordinates": "-28.062, 32.125", "country": "South Africa"}, "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": ""},
-        {"project_title": "Zakouma Rhino", "year": 2023, "species": "Black Rhino", "number_of_animals": 6, "source_area": {"name": "Thaba Tholo", "coordinates": "-24.528, 27.865", "country": "South Africa"}, "recipient_area": {"name": "Zakouma National Park", "coordinates": "10.837, 19.831", "country": "Chad"}, "transport": "Air", "special_project": "African Parks", "additional_info": "Plane: C130"},
-        {"project_title": "Akagera Lions", "year": 2023, "species": "Lion", "number_of_animals": 7, "source_area": {"name": "Phinda Private Game Reserve", "coordinates": "-27.830, 32.329", "country": "South Africa"}, "recipient_area": {"name": "Akagera National Park", "coordinates": "-1.879, 30.796", "country": "Rwanda"}, "transport": "Air", "special_project": "", "additional_info": ""},
-        
-        # Multi-species projects from 2016 onward
-        {"project_title": "Nkhotakota plains game", "year": 2016, "species": "Buffalo", "number_of_animals": 1500, "source_area": {"name": "Liwonde National Park", "coordinates": "-14.844, 35.347", "country": "Malawi"}, "recipient_area": {"name": "Nkhotakota National Park", "coordinates": "-12.799, 34.011", "country": "Malawi"}, "transport": "Road", "special_project": "African Parks", "additional_info": "Impala, kudu, sable, zebra, warthog, waterbuck, hartebeest"},
-        
-        # 2025 Future Projects
-        {"project_title": "Zinave Black Rhino", "year": 2025, "species": "Black Rhino", "number_of_animals": 10, "source_area": {"name": "Hluhluwe Game Reserve", "coordinates": "-27.345, 32.065", "country": "South Africa"}, "recipient_area": {"name": "Zinave National Park", "coordinates": "-21.879, 33.550", "country": "Mozambique"}, "transport": "Road", "special_project": "Peace Parks", "additional_info": ""},
-        {"project_title": "Akagera White Rhino", "year": 2025, "species": "White Rhino", "number_of_animals": 70, "source_area": {"name": "Phinda Private Game Reserve", "coordinates": "-27.830, 32.329", "country": "South Africa"}, "recipient_area": {"name": "Akagera National Park", "coordinates": "-1.879, 30.796", "country": "Rwanda"}, "transport": "Air", "special_project": "African Parks", "additional_info": "Two Loads of 35 Rhino - Boeing 747"},
-        {"project_title": "Ngorongoro Crater Rhino", "year": 2025, "species": "White Rhino", "number_of_animals": 17, "source_area": {"name": "Phinda Private Game Reserve", "coordinates": "-27.830, 32.329", "country": "South Africa"}, "recipient_area": {"name": "Ngorongoro Crater", "coordinates": "-3.162, 35.582", "country": "Tanzania"}, "transport": "Air", "special_project": "", "additional_info": "Boeing 767"},
-        {"project_title": "Asante Sana Elephant", "year": 2025, "species": "Elephant", "number_of_animals": 5, "source_area": {"name": "Addo Elephant National Park", "coordinates": "-33.390, 25.646", "country": "South Africa"}, "recipient_area": {"name": "Ubulozi Private Reserve", "coordinates": "-24.635, 30.970", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""},
-        {"project_title": "Addo Elephant", "year": 2025, "species": "Elephant", "number_of_animals": 30, "source_area": {"name": "Addo Elephant National Park", "coordinates": "-33.390, 25.646", "country": "South Africa"}, "recipient_area": {"name": "Addo Elephant National Park", "coordinates": "-24.362, 30.962", "country": "South Africa"}, "transport": "Road", "special_project": "", "additional_info": ""}
-    ]
-    
-    created_translocations = []
-    for data in complete_data:
-        translocation_obj = Translocation(**data)
-        await db.translocations.insert_one(translocation_obj.dict())
-        created_translocations.append(translocation_obj)
-    
-    return {"message": f"Imported {len(created_translocations)} complete historical translocations from Excel", "translocations": created_translocations}
-
-# Keep the old endpoint as backup
-
-# Keep the old endpoint as backup
-
-@api_router.post("/translocations/sample-data")
-async def create_sample_data():
-    # Keep the existing sample data for demo purposes
-    sample_translocations = [
-        {
-            "project_title": "Sample Elephant Translocation",
-            "year": 2023,
-            "species": "Elephant",
-            "number_of_animals": 25,
-            "source_area": {
-                "name": "Kruger National Park",
-                "coordinates": "-24.0063, 31.4953",
-                "country": "South Africa"
-            },
-            "recipient_area": {
-                "name": "Addo Elephant National Park", 
-                "coordinates": "-33.4734, 25.7519",
-                "country": "South Africa"
-            },
-            "transport": "Road",
-            "special_project": "Peace Parks",
-            "additional_info": "Sample family herd relocation"
-        }
-    ]
-    
-    created_translocations = []
-    for sample in sample_translocations:
-        translocation_obj = Translocation(**sample)
-        await db.translocations.insert_one(translocation_obj.dict())
-        created_translocations.append(translocation_obj)
-    
-    return {"message": f"Created {len(created_translocations)} sample translocations", "translocations": created_translocations}
-
-# Include the router in the main app
-app.include_router(api_router)
+app.include_router(api_router, prefix="/api")
 
 app.add_middleware(
     CORSMiddleware,
