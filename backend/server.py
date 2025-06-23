@@ -183,17 +183,21 @@ async def import_excel_file(file: UploadFile = File(...)):
         project_col_alt = find_column(df, ['special', 'project'])
         info_col = find_column(df, ['additional', 'info', 'notes'])
         
-        # Fix coordinate columns specifically
-        if not source_coord_col:
-            for col in df.columns:
-                if 'source' in col.lower() and 'co-ordinates' in col.lower():
-                    source_coord_col = col
-                    break
-        if not dest_coord_col:
-            for col in df.columns:
-                if 'recipient' in col.lower() and 'co-ordinates' in col.lower():
-                    dest_coord_col = col
-                    break
+        # Fix coordinate columns specifically - EXACT MATCHING
+        source_coord_col = None
+        dest_coord_col = None
+        
+        for col in df.columns:
+            if 'source' in col.lower() and ('co-ordinates' in col.lower() or 'coordinates' in col.lower()):
+                source_coord_col = col
+                print(f"  Found source coordinates column: {col}")
+                break
+                
+        for col in df.columns:
+            if ('recipient' in col.lower() or 'destination' in col.lower()) and ('co-ordinates' in col.lower() or 'coordinates' in col.lower()):
+                dest_coord_col = col
+                print(f"  Found destination coordinates column: {col}")
+                break
         
         print(f"Found columns:")
         print(f"  Project: {project_col}")
