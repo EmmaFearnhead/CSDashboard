@@ -208,24 +208,23 @@ const MapComponent = ({ translocations, filteredTranslocations }) => {
     };
   }, []);
   
-  // Update markers when filtered data changes
+  // Update markers when filtered data changes - FORCE TRIGGER
   useEffect(() => {
     console.log('🗺️ USEEFFECT TRIGGERED with', filteredTranslocations.length, 'translocations');
-    console.log('🗺️ MAP REF EXISTS:', !!mapRef.current);
     
-    if (!mapRef.current) {
-      console.log('🗺️ NO MAP REF - RETURNING');
+    if (!mapRef.current || !filteredTranslocations.length) {
+      console.log('🗺️ NO MAP OR NO DATA - RETURNING');
       return;
     }
-    
-    // Clear existing markers and lines before adding new ones
+
+    console.log('🗺️ PROCESSING MAP DATA...');
+
+    // Clear existing markers and lines
     mapRef.current.eachLayer(layer => {
       if (layer instanceof window.L.Marker || 
           layer instanceof window.L.Polyline || 
           layer instanceof window.L.CircleMarker) {
-        if (!layer.options.permanent) { // Don't remove tile layers
-          mapRef.current.removeLayer(layer);
-        }
+        mapRef.current.removeLayer(layer);
       }
     });
     
