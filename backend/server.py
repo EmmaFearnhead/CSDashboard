@@ -121,6 +121,70 @@ async def delete_translocation(translocation_id: str):
         raise HTTPException(status_code=404, detail="Translocation not found")
     return {"message": "Translocation deleted successfully"}
 
+@api_router.get("/translocations/export-excel")
+async def export_excel():
+    """Export all translocation data to Excel format"""
+    try:
+        # Get all translocations from database
+        translocations = []
+        async for translocation in db.translocations.find():
+            if '_id' in translocation:
+                del translocation['_id']  # Remove MongoDB ID for clean export
+            translocations.append(translocation)
+        
+        if not translocations:
+            raise HTTPException(status_code=404, detail="No data found to export")
+        
+        # Convert to DataFrame with proper column structure
+        excel_data = []
+        for t in translocations:
+            excel_row = {
+                'Project Title': t.get('project_title', ''),
+                'Year': t.get('year', ''),
+                'Species': t.get('species', ''),
+                'Number': t.get('number_of_animals', ''),
+                'Source Area: Name': t.get('source_area', {}).get('name', ''),
+                'Source Area: Co-Ordinates': t.get('source_area', {}).get('coordinates', ''),
+                'Source Area: Country': t.get('source_area', {}).get('country', ''),
+                'Recipient Area: Name': t.get('recipient_area', {}).get('name', ''),
+                'Recipient Area: Co-Ordinates': t.get('recipient_area', {}).get('coordinates', ''),
+                'Recipient Area: Country': t.get('recipient_area', {}).get('country', ''),
+                'Transport': t.get('transport', ''),
+                'Special Project': t.get('special_project', ''),
+                'Additional Info': t.get('additional_info', ''),
+                'Created Date': str(t.get('created_at', ''))[:10]  # Just the date part
+            }
+            excel_data.append(excel_row)
+        
+        # Create DataFrame and Excel file
+        df = pd.DataFrame(excel_data)
+        
+        # Create Excel file in memory
+        from io import BytesIO
+        excel_buffer = BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+            df.to_excel(writer, sheet_name='Conservation Translocations', index=False)
+        
+        excel_buffer.seek(0)
+        
+        # Return as downloadable file
+        from fastapi.responses import StreamingResponse
+        
+        def generate():
+            yield excel_buffer.getvalue()
+        
+        filename = f"conservation_translocations_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        
+        return StreamingResponse(
+            io.BytesIO(excel_buffer.getvalue()),
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+        
+    except Exception as e:
+        print(f"Error exporting Excel: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error exporting data: {str(e)}")
+
 # REMOVED - No more historical data imports
 
 @api_router.post("/translocations/import-excel-file")
