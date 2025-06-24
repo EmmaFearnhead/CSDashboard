@@ -550,6 +550,12 @@ function App() {
                 {showFileUpload ? 'Hide Upload' : 'Upload Excel File'}
               </button>
               <button
+                onClick={downloadExcel}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors shadow-md"
+              >
+                📊 Download Excel
+              </button>
+              <button
                 onClick={() => {setShowForm(!showForm); setEditingTranslocation(null);}}
                 className="bg-nature-green text-white px-4 py-2 rounded-md hover:bg-forest-green transition-colors shadow-md"
               >
