@@ -1,0 +1,12 @@
+# Railway Deployment
+node_modules/
+*.log
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+.DS_Store
