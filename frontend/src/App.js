@@ -318,6 +318,26 @@ function App() {
     }
   };
 
+  const downloadExcel = async () => {
+    try {
+      const response = await fetch(`${API}/translocations/export-excel`);
+      if (!response.ok) throw new Error('Download failed');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `conservation_data_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading Excel:', error);
+      alert('Error downloading Excel file');
+    }
+  };
+
   const importExcelFile = async (file) => {
     try {
       console.log('Starting file upload:', file.name, file.type, file.size);
