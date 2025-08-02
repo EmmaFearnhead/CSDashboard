@@ -257,7 +257,7 @@ async def export_excel(current_user: dict = Depends(get_current_user)):
 # REMOVED - No more historical data imports
 
 @api_router.post("/translocations/import-excel-file")
-async def import_excel_file(file: UploadFile = File(...)):
+async def import_excel_file(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     """Import translocation data from Excel or CSV file upload - ROBUST VERSION"""
     
     try:
