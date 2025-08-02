@@ -934,4 +934,4 @@ const FileUploadComponent = ({ onFileUpload, loading, onCancel }) => {
   );
 };
 
-export default App;
+export default Dashboard;
