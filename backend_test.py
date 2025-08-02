@@ -12,6 +12,168 @@ API_URL = f"{BACKEND_URL}/api"
 def print_separator():
     print("\n" + "="*80 + "\n")
 
+def test_authentication_system():
+    """Test the complete authentication system"""
+    print("Testing authentication system...")
+    
+    # Test 1: Unauthenticated requests to protected endpoints should return 401
+    print("\n1. Testing unauthenticated requests to protected endpoints...")
+    
+    protected_endpoints = [
+        "/",
+        "/translocations",
+        "/translocations/stats"
+    ]
+    
+    for endpoint in protected_endpoints:
+        try:
+            response = requests.get(f"{API_URL}{endpoint}")
+            print(f"  GET {endpoint}: Status {response.status_code}")
+            assert response.status_code == 401, f"Expected 401 for unauthenticated request to {endpoint}, got {response.status_code}"
+        except Exception as e:
+            print(f"  ❌ Failed testing unauthenticated access to {endpoint}: {str(e)}")
+            return False
+    
+    print("  ✅ All protected endpoints correctly return 401 for unauthenticated requests")
+    
+    # Test 2: Login with correct password should return JWT token
+    print("\n2. Testing login with correct password...")
+    
+    try:
+        login_data = {"password": "conservation2024"}
+        response = requests.post(f"{API_URL}/auth/login", json=login_data)
+        print(f"  Login response status: {response.status_code}")
+        
+        assert response.status_code == 200, f"Expected 200 for correct login, got {response.status_code}"
+        
+        login_result = response.json()
+        assert "access_token" in login_result, "Login response should contain access_token"
+        assert "token_type" in login_result, "Login response should contain token_type"
+        assert login_result["token_type"] == "bearer", f"Expected token_type 'bearer', got {login_result['token_type']}"
+        
+        # Store the token for further tests
+        valid_token = login_result["access_token"]
+        print(f"  ✅ Login successful, received JWT token: {valid_token[:20]}...")
+        
+    except Exception as e:
+        print(f"  ❌ Failed testing login with correct password: {str(e)}")
+        return False
+    
+    # Test 3: Login with wrong password should return 401
+    print("\n3. Testing login with wrong password...")
+    
+    try:
+        wrong_login_data = {"password": "wrongpassword"}
+        response = requests.post(f"{API_URL}/auth/login", json=wrong_login_data)
+        print(f"  Wrong password login status: {response.status_code}")
+        
+        assert response.status_code == 401, f"Expected 401 for wrong password, got {response.status_code}"
+        
+        error_result = response.json()
+        assert "detail" in error_result, "Error response should contain detail field"
+        print(f"  ✅ Wrong password correctly rejected with: {error_result['detail']}")
+        
+    except Exception as e:
+        print(f"  ❌ Failed testing login with wrong password: {str(e)}")
+        return False
+    
+    # Test 4: Authenticated requests with valid JWT token should work
+    print("\n4. Testing authenticated requests with valid JWT token...")
+    
+    try:
+        headers = {"Authorization": f"Bearer {valid_token}"}
+        
+        # Test health check endpoint
+        response = requests.get(f"{API_URL}/", headers=headers)
+        print(f"  Authenticated health check status: {response.status_code}")
+        assert response.status_code == 200, f"Expected 200 for authenticated health check, got {response.status_code}"
+        
+        health_result = response.json()
+        assert "message" in health_result, "Health check should return message"
+        assert health_result["message"] == "Wildlife Conservation Dashboard API", "Incorrect health check message"
+        
+        # Test translocations endpoint
+        response = requests.get(f"{API_URL}/translocations", headers=headers)
+        print(f"  Authenticated translocations status: {response.status_code}")
+        assert response.status_code == 200, f"Expected 200 for authenticated translocations, got {response.status_code}"
+        
+        translocations = response.json()
+        print(f"  Retrieved {len(translocations)} translocations with valid token")
+        
+        # Test stats endpoint
+        response = requests.get(f"{API_URL}/translocations/stats", headers=headers)
+        print(f"  Authenticated stats status: {response.status_code}")
+        assert response.status_code == 200, f"Expected 200 for authenticated stats, got {response.status_code}"
+        
+        stats = response.json()
+        print(f"  Retrieved stats for {len(stats)} species with valid token")
+        
+        print("  ✅ All authenticated requests work correctly with valid JWT token")
+        
+    except Exception as e:
+        print(f"  ❌ Failed testing authenticated requests: {str(e)}")
+        return False
+    
+    # Test 5: Test /api/auth/verify endpoint with valid token
+    print("\n5. Testing /api/auth/verify endpoint with valid token...")
+    
+    try:
+        headers = {"Authorization": f"Bearer {valid_token}"}
+        response = requests.post(f"{API_URL}/auth/verify", headers=headers)
+        print(f"  Token verification status: {response.status_code}")
+        
+        assert response.status_code == 200, f"Expected 200 for token verification, got {response.status_code}"
+        
+        verify_result = response.json()
+        assert "authenticated" in verify_result, "Verify response should contain authenticated field"
+        assert verify_result["authenticated"] == True, "Token should be verified as authenticated"
+        assert "user" in verify_result, "Verify response should contain user field"
+        
+        print(f"  ✅ Token verification successful: {verify_result}")
+        
+    except Exception as e:
+        print(f"  ❌ Failed testing token verification: {str(e)}")
+        return False
+    
+    # Test 6: Test with invalid token
+    print("\n6. Testing with invalid JWT token...")
+    
+    try:
+        invalid_headers = {"Authorization": "Bearer invalid_token_here"}
+        response = requests.get(f"{API_URL}/", headers=invalid_headers)
+        print(f"  Invalid token request status: {response.status_code}")
+        
+        assert response.status_code == 401, f"Expected 401 for invalid token, got {response.status_code}"
+        
+        error_result = response.json()
+        assert "detail" in error_result, "Error response should contain detail field"
+        print(f"  ✅ Invalid token correctly rejected with: {error_result['detail']}")
+        
+    except Exception as e:
+        print(f"  ❌ Failed testing invalid token: {str(e)}")
+        return False
+    
+    # Test 7: Test token verification with invalid token
+    print("\n7. Testing /api/auth/verify with invalid token...")
+    
+    try:
+        invalid_headers = {"Authorization": "Bearer invalid_token_here"}
+        response = requests.post(f"{API_URL}/auth/verify", headers=invalid_headers)
+        print(f"  Invalid token verification status: {response.status_code}")
+        
+        assert response.status_code == 401, f"Expected 401 for invalid token verification, got {response.status_code}"
+        
+        error_result = response.json()
+        assert "detail" in error_result, "Error response should contain detail field"
+        print(f"  ✅ Invalid token verification correctly rejected with: {error_result['detail']}")
+        
+    except Exception as e:
+        print(f"  ❌ Failed testing invalid token verification: {str(e)}")
+        return False
+    
+    print("\n✅ ALL AUTHENTICATION TESTS PASSED!")
+    return True
+
 def test_health_check():
     """Test the basic health check endpoint"""
     print("Testing health check endpoint (GET /api/)...")
