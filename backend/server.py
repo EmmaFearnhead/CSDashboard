@@ -169,7 +169,7 @@ async def get_stats(current_user: dict = Depends(get_current_user)):
     return stats
 
 @api_router.post("/translocations")
-async def create_translocation(translocation: Translocation):
+async def create_translocation(translocation: Translocation, current_user: dict = Depends(get_current_user)):
     result = await db.translocations.insert_one(translocation.dict())
     return {"id": str(result.inserted_id), "message": "Translocation created successfully"}
 
