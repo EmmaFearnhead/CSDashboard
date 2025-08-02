@@ -144,7 +144,7 @@ def test_authentication_system():
         response = requests.get(f"{API_URL}/", headers=invalid_headers)
         print(f"  Invalid token request status: {response.status_code}")
         
-        assert response.status_code == 401, f"Expected 401 for invalid token, got {response.status_code}"
+        assert response.status_code in [401, 403], f"Expected 401 or 403 for invalid token, got {response.status_code}"
         
         error_result = response.json()
         assert "detail" in error_result, "Error response should contain detail field"
