@@ -148,7 +148,7 @@ async def get_translocations(current_user: dict = Depends(get_current_user)):
     return translocations
 
 @api_router.get("/translocations/stats")
-async def get_stats():
+async def get_stats(current_user: dict = Depends(get_current_user)):
     pipeline = [
         {
             "$group": {
