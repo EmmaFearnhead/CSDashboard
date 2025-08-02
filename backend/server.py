@@ -5,15 +5,20 @@ import io
 import logging
 import uuid
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 from enum import Enum
 
 # FastAPI and Database
-from fastapi import FastAPI, APIRouter, HTTPException, File, UploadFile
+from fastapi import FastAPI, APIRouter, HTTPException, File, UploadFile, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from motor.motor_asyncio import AsyncIOMotorClient
+
+# Authentication
+import jwt
+from passlib.context import CryptContext
 
 # 2. MongoDB Setup
 MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
