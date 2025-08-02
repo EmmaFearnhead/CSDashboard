@@ -19,6 +19,10 @@ from motor.motor_asyncio import AsyncIOMotorClient
 # Authentication
 import jwt
 from passlib.context import CryptContext
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # 2. Authentication Configuration
 SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'your-secret-key-change-this-in-production')
