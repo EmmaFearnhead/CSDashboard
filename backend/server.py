@@ -20,7 +20,25 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import jwt
 from passlib.context import CryptContext
 
-# 2. MongoDB Setup
+# 2. Authentication Configuration
+SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'your-secret-key-change-this-in-production')
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
+MASTER_PASSWORD = os.environ.get('DASHBOARD_PASSWORD', 'conservation2024')
+
+# Password hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+security = HTTPBearer()
+
+# Authentication Models
+class LoginRequest(BaseModel):
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+# 3. MongoDB Setup
 MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
 DATABASE_NAME = "conservation_dashboard"
 
