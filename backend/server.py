@@ -174,7 +174,7 @@ async def create_translocation(translocation: Translocation, current_user: dict 
     return {"id": str(result.inserted_id), "message": "Translocation created successfully"}
 
 @api_router.put("/translocations/{translocation_id}")
-async def update_translocation(translocation_id: str, translocation: Translocation):
+async def update_translocation(translocation_id: str, translocation: Translocation, current_user: dict = Depends(get_current_user)):
     result = await db.translocations.update_one(
         {"id": translocation_id},
         {"$set": translocation.dict()}
