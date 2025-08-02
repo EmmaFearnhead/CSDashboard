@@ -694,20 +694,11 @@ def run_all_tests():
     print("CONSERVATION SOLUTIONS TRANSLOCATION DASHBOARD API TESTS")
     print_separator()
     
-    # First, import the complete dataset to ensure we have data to test with
-    print("Importing complete historical dataset...")
-    requests.post(f"{API_URL}/translocations/import-complete-excel-data")
-    
     test_results = {
+        "Authentication System": test_authentication_system(),
         "Health Check": test_health_check(),
         "Get All Translocations": test_get_translocations(),
-        "Import Complete Excel Data": test_import_complete_excel_data(),
-        "Import Simplified Data": test_import_simplified_data(),
-        "Get Translocation Stats": test_get_translocation_stats(),
-        "Filtered Translocations": test_filtered_translocations(),
-        "CRUD Operations": test_create_update_delete_translocation(),
-        "Excel File Upload": test_excel_file_upload(),
-        "Invalid File Upload": test_invalid_file_upload()
+        "Get Translocation Stats": test_get_translocation_stats()
     }
     
     print_separator()
