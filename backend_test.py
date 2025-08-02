@@ -35,7 +35,7 @@ def test_authentication_system():
             print(f"  ❌ Failed testing unauthenticated access to {endpoint}: {str(e)}")
             return False
     
-    print("  ✅ All protected endpoints correctly return 401 for unauthenticated requests")
+    print("  ✅ All protected endpoints correctly return 401/403 for unauthenticated requests")
     
     # Test 2: Login with correct password should return JWT token
     print("\n2. Testing login with correct password...")
