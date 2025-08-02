@@ -184,7 +184,7 @@ async def update_translocation(translocation_id: str, translocation: Translocati
     return {"message": "Translocation updated successfully"}
 
 @api_router.delete("/translocations/{translocation_id}")
-async def delete_translocation(translocation_id: str):
+async def delete_translocation(translocation_id: str, current_user: dict = Depends(get_current_user)):
     result = await db.translocations.delete_one({"id": translocation_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Translocation not found")
