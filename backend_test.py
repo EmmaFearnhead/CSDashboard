@@ -218,7 +218,12 @@ def test_get_translocations():
     print("Testing get all translocations endpoint (GET /api/translocations)...")
     
     try:
-        response = requests.get(f"{API_URL}/translocations")
+        headers = get_auth_headers()
+        if not headers:
+            print("❌ Failed to get authentication headers")
+            return False
+            
+        response = requests.get(f"{API_URL}/translocations", headers=headers)
         print(f"Status Code: {response.status_code}")
         
         assert response.status_code == 200, f"Expected status code 200, got {response.status_code}"
