@@ -45,7 +45,36 @@ DATABASE_NAME = "conservation_dashboard"
 client = AsyncIOMotorClient(MONGO_URL)
 db = client[DATABASE_NAME]
 
-# 3. Pydantic Models
+# 4. Authentication Functions
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+def verify_token(token: str):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except jwt.PyJWTError:
+        return None
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    payload = verify_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return payload
+
+def verify_password(password: str) -> bool:
+    return password == MASTER_PASSWORD
+
+# 5. Pydantic Models
 class Transport(str, Enum):
     ROAD = "Road"
     AIR = "Air"
