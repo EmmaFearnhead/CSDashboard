@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Build a dashboard for conservation company to display wildlife translocations on a map with species, numbers, locations from/to, transport mode, etc."
+user_problem_statement: "Build a dashboard for conservation company to display wildlife translocations on a map with species, numbers, locations from/to, transport mode, etc. - UPDATED: Add authentication protection to secure database access while keeping it accessible on any IP address."
 
 backend:
   - task: "Wildlife translocation data model and API endpoints"
