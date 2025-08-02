@@ -174,12 +174,32 @@ def test_authentication_system():
     print("\n✅ ALL AUTHENTICATION TESTS PASSED!")
     return True
 
+def get_auth_headers():
+    """Get authentication headers with valid JWT token"""
+    try:
+        login_data = {"password": "conservation2024"}
+        response = requests.post(f"{API_URL}/auth/login", json=login_data)
+        if response.status_code == 200:
+            token = response.json()["access_token"]
+            return {"Authorization": f"Bearer {token}"}
+        else:
+            print(f"Failed to get auth token: {response.status_code}")
+            return None
+    except Exception as e:
+        print(f"Error getting auth headers: {str(e)}")
+        return None
+
 def test_health_check():
     """Test the basic health check endpoint"""
     print("Testing health check endpoint (GET /api/)...")
     
     try:
-        response = requests.get(f"{API_URL}/")
+        headers = get_auth_headers()
+        if not headers:
+            print("❌ Failed to get authentication headers")
+            return False
+            
+        response = requests.get(f"{API_URL}/", headers=headers)
         print(f"Status Code: {response.status_code}")
         print(f"Response: {response.json()}")
         
