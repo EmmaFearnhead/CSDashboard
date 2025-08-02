@@ -270,7 +270,7 @@ const StatsPanel = ({ stats }) => {
   );
 };
 
-function App() {
+function Dashboard() {
   const [translocations, setTranslocations] = useState([]);
   const [filteredTranslocations, setFilteredTranslocations] = useState([]);
   const [stats, setStats] = useState({});
