@@ -111,17 +111,34 @@ class Translocation(BaseModel):
     additional_info: str = ""
     created_at: datetime = Field(default_factory=datetime.now)
 
-# 4. API Setup
+# 6. API Setup
 app = FastAPI()
 api_router = APIRouter()
 
-# API endpoints
+# Authentication endpoints (no auth required)
+@api_router.post("/auth/login", response_model=Token)
+async def login(login_request: LoginRequest):
+    if not verify_password(login_request.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    access_token = create_access_token(data={"authenticated": True})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@api_router.post("/auth/verify")
+async def verify_auth(current_user: dict = Depends(get_current_user)):
+    return {"authenticated": True, "user": current_user}
+
+# Protected API endpoints (authentication required)
 @api_router.get("/")
-async def health_check():
+async def health_check(current_user: dict = Depends(get_current_user)):
     return {"message": "Wildlife Conservation Dashboard API"}
 
 @api_router.get("/translocations")
-async def get_translocations():
+async def get_translocations(current_user: dict = Depends(get_current_user)):
     translocations = []
     async for translocation in db.translocations.find():
         # Remove MongoDB ObjectId for JSON serialization
