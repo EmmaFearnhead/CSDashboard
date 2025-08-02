@@ -191,7 +191,7 @@ async def delete_translocation(translocation_id: str, current_user: dict = Depen
     return {"message": "Translocation deleted successfully"}
 
 @api_router.get("/translocations/export-excel")
-async def export_excel():
+async def export_excel(current_user: dict = Depends(get_current_user)):
     """Export all translocation data to Excel format"""
     try:
         # Get all translocations from database
